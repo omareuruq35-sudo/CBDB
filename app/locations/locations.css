@@ -1,0 +1,154 @@
+.locations-page {
+  direction: rtl;
+  padding: 60px 20px;
+  background-color: #ffffff; /* بيضاء سادة */
+  background-image: none;    /* إلغاء أي جرادينت */
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* الهالات الملونة في الخلفية (Blur Effects) */
+.locations-page::before, .locations-page::after {
+  display: none;
+}
+.locations-page::before { background: #F0A2A2; left: -100px; top: 100px; }
+.locations-page::after { background: #E29D9D; right: -100px; top: -50px; }
+
+.page-header {
+  text-align: center;
+  margin-bottom: 50px;
+  position: relative;
+  z-index: 1;
+}
+
+.main-title {
+  font-size: 42px;
+  font-weight: 700;
+  color: #000000;
+  margin-bottom: 15px;
+}
+
+.sub-title {
+  font-size: 20px;
+  color: #000000;
+  font-weight: 400;
+}
+
+.locations-list {
+  max-width: 1091px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 34px;
+  position: relative;
+  z-index: 1;
+}
+
+.location-card {
+  background: #FFFFFF;
+  box-shadow: 0px 3px 25px 1px rgba(0, 0, 0, 0.25);
+  border-radius: 15px;
+  padding: 25px 40px;
+  display: flex;
+  flex-direction: row;    /* ترتيب العناصر أفقي */
+  align-items: center;
+  justify-content: flex-start; /* العناصر تبدأ من اليمين وتلزق في بعضها */
+  gap: 120px;              /* المسافة الموحدة بين الأجزاء، صغري الرقم ده لو عاوزه تقربيهم أكتر */
+  min-height: 237px;
+  
+}
+
+.location-card:hover { transform: scale(1.01); }  /*دي عشان لما اضغط علي الجزء اللي فيه الحاجات يتحرك*/
+
+/* تنسيق اسم المحافظة */
+.gov-name-section {
+  display: flex;
+  flex-direction: row;    /* النص والشرطة جنب بعض */
+  align-items: center;
+    /* بيضمن إنهم يلزقوا في بعض من جهة اليمين */
+  gap: 12px;                   /* المسافة بين الشرطة والاسم */
+  min-width: 150px;      /* مساحة ثابتة للاسم */
+  
+}
+
+.red-line {
+ width: 6px;            /* عرض رفيع */
+  height: 26px;          /* طول عمودي مناسب لطول النص */
+  background-color: #E02323;
+  border-radius: 2px;
+  flex-shrink: 10;
+}
+
+.gov-name {
+ font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+  white-space: nowrap;
+}
+
+/* صناديق المعلومات */
+.address-box {
+  background: #F7F7F7;
+  padding: 30px 25px;
+  border-radius: 5px;
+  width: 224px;
+  min-height: 90px;
+  
+}
+
+.phone-box {
+  background: #FCE9E9;
+  padding: 30px 30px;
+  border-radius: 10px;
+  width: 350px;
+  min-height: 100px;
+}
+
+.icon-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 10px;
+}
+
+.box-label {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.address-text, .phone-item {
+  font-size: 17px;
+  color: #000;
+}
+
+.phone-list {
+  list-style: none;
+  padding: 0;
+}
+
+.phone-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.red-dot {
+  width: 6px;
+  height: 6px;
+  background-color: #E02323;
+  border-radius: 50%;
+}
+
+.emergency-call {
+  text-align: center;
+  margin-top: 60px;
+  color: #757575;
+  font-size: 16px;
+  font-weight: 500;
+}
+.number-highlight {
+  color: #E02323; /* اللون الأحمر للرقم 123 فقط */
+  font-weight: 700; /* عشان الرقم يكون أوضح وأثقل */
+}

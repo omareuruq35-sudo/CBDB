@@ -1,0 +1,78 @@
+page.tsx.guidelines-page {
+  direction: rtl;
+  padding: 40px 20px;
+  background: #ffffff;
+  min-height: 100vh; /* خليتها تغطي الشاشة كلها */
+  position: relative;
+  overflow: hidden;
+}
+
+/* التعديل الجوهري هنا لرفع الدوائر وتوزيعها */
+
+.main-section-title {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 700;
+  margin-top: 20px; /* مسافة من الناف بار */
+  margin-bottom: 50px;
+  color: #000;
+  position: relative;
+  z-index: 1;
+}
+
+.cards-container {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+}
+
+.info-card {
+  background: #FEFEFE;
+  border: 1px solid #E2E2E2;
+  box-shadow: 0px 10px 40px rgba(0, 0, 0, 0.06); 
+  border-radius: 15px;
+  width: 536px;
+  min-height: 531px;
+  padding: 30px;
+}
+
+.card-header {
+  font-size: 16px;
+  font-weight: 700;
+  color: #000;
+  margin-bottom: 25px;
+  text-align: right;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 10px;
+}
+
+.info-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.list-item {
+  position: relative;
+  padding-right: 25px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.6;
+  text-align: right;
+  color: #191818;
+}
+
+.list-item::before {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 8px;
+  width: 6px;
+  height: 6px;
+  background: #191818;
+  border-radius: 50%;
+}
