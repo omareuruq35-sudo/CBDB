@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Menu, X } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -66,6 +66,13 @@ export function Navbar() {
     }
   }, [lastScrollY])
 
+  const visibleNavLinks = useMemo(() => {
+    if (isEmployeeLoggedIn) {
+      return navLinks.filter((link) => link.href !== "/login")
+    }
+    return navLinks
+  }, [isEmployeeLoggedIn])
+
   return (
     <header
       className={`fixed top-0 left-0 z-50 w-full py-6 flex flex-col items-center bg-white transition-transform duration-300 ${
@@ -92,7 +99,7 @@ export function Navbar() {
           </Link>
 
           <div className="hidden lg:flex items-center flex-row gap-1">
-            {navLinks.map((link) => {
+            {visibleNavLinks.map((link) => {
               const isActive = pathname === link.href
               return (
                 <Link
@@ -140,7 +147,7 @@ export function Navbar() {
       {isOpen && (
         <div className="lg:hidden w-[90%] mt-4 bg-white rounded-3xl p-4 shadow-2xl border border-gray-50">
           <div className="flex flex-col gap-2">
-            {navLinks.map((link) => (
+            {visibleNavLinks.map((link) => (
               <Link
                 key={link.label}
                 href={link.href}
