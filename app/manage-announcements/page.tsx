@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
-fetch("http://localhost:5000/api/emergency-ads")
+// fetch("http://localhost:5000/api/emergency-ads")
 
 type BloodType = "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-";
 
