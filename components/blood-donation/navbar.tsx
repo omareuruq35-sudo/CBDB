@@ -1,9 +1,17 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { Menu, X } from "lucide-react"
+import {
+  Menu,
+  X,
+  Droplets,
+  MapPin,
+  BarChart3,
+  UserPlus,
+  LogOut,
+} from "lucide-react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 
 const navLinks = [
   { label: "الرئيسية", href: "/" },
@@ -25,8 +33,12 @@ export function Navbar() {
   const [showNavbar, setShowNavbar] = useState(true)
   const [lastScrollY, setLastScrollY] = useState(0)
   const [isEmployeeLoggedIn, setIsEmployeeLoggedIn] = useState(false)
+  const [totalDonors, setTotalDonors] = useState(0)
 
   const pathname = usePathname()
+  const router = useRouter()
+
+  const isSiteDataPage = pathname === "/site-data"
 
   useEffect(() => {
     const checkLoginStatus = () => {
@@ -35,12 +47,28 @@ export function Navbar() {
     }
 
     checkLoginStatus()
-
     window.addEventListener("storage", checkLoginStatus)
 
     return () => {
       window.removeEventListener("storage", checkLoginStatus)
     }
+  }, [pathname])
+
+  useEffect(() => {
+    const fetchDonorsCount = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/donors")
+        const data = await res.json()
+
+        if (Array.isArray(data)) {
+          setTotalDonors(data.length)
+        }
+      } catch (error) {
+        console.error("Error fetching donors count:", error)
+      }
+    }
+
+    fetchDonorsCount()
   }, [pathname])
 
   useEffect(() => {
@@ -73,24 +101,31 @@ export function Navbar() {
     return navLinks
   }, [isEmployeeLoggedIn])
 
+  const handleLogout = () => {
+    localStorage.removeItem("employeeLoggedIn")
+    setIsEmployeeLoggedIn(false)
+    window.dispatchEvent(new Event("storage"))
+    router.push("/")
+  }
+
   return (
     <header
-      className={`fixed top-0 left-0 z-50 w-full py-6 flex flex-col items-center bg-white transition-transform duration-300 ${
+      className={`fixed top-0 left-0 z-50 flex w-full flex-col items-center bg-white py-6 transition-transform duration-300 ${
         showNavbar ? "translate-y-0" : "-translate-y-full"
       }`}
     >
-      <h1 className="text-[#d32f2f] text-2xl md:text-3xl font-extrabold text-center mb-6">
+      <h1 className="mb-6 text-center text-2xl font-extrabold text-[#d32f2f] md:text-3xl">
         البنك المركزي المصري للتبرع بالدم
       </h1>
 
-      <nav className="flex items-center bg-white border border-gray-100 rounded-full px-4 py-2 shadow-md max-w-[95%]">
-        <div className="flex items-center flex-row gap-4 md:gap-8">
+      <nav className="flex max-w-[95%] items-center rounded-full border border-gray-100 bg-white px-4 py-2 shadow-md">
+        <div className="flex flex-row items-center gap-4 md:gap-8">
           <Link href="/" className="flex-shrink-0">
-            <div className="w-11 h-11 overflow-hidden rounded-full border-2 border-red-50 shadow-sm">
+            <div className="h-11 w-11 overflow-hidden rounded-full border-2 border-red-50 shadow-sm">
               <img
                 src="/logo.png"
                 alt="Logo"
-                className="w-full h-full object-cover"
+                className="h-full w-full object-cover"
                 onError={(e) =>
                   (e.currentTarget.src = "https://via.placeholder.com/150")
                 }
@@ -98,17 +133,17 @@ export function Navbar() {
             </div>
           </Link>
 
-          <div className="hidden lg:flex items-center flex-row gap-1">
+          <div className="hidden flex-row items-center gap-1 lg:flex">
             {visibleNavLinks.map((link) => {
               const isActive = pathname === link.href
               return (
                 <Link
                   key={link.label}
                   href={link.href}
-                  className={`px-4 py-2 text-[14px] font-bold rounded-full transition-all duration-300 whitespace-nowrap ${
+                  className={`whitespace-nowrap rounded-full px-4 py-2 text-[14px] font-bold transition-all duration-300 ${
                     isActive
                       ? "bg-[#d32f2f] text-white shadow-md"
-                      : "text-gray-600 hover:text-[#d32f2f] hover:bg-red-50"
+                      : "text-gray-600 hover:bg-red-50 hover:text-[#d32f2f]"
                   }`}
                 >
                   {link.label}
@@ -123,10 +158,10 @@ export function Navbar() {
                   <Link
                     key={link.label}
                     href={link.href}
-                    className={`px-4 py-2 text-[14px] font-bold rounded-full transition-all duration-300 whitespace-nowrap ${
+                    className={`whitespace-nowrap rounded-full px-4 py-2 text-[14px] font-bold transition-all duration-300 ${
                       isActive
                         ? "bg-[#d32f2f] text-white shadow-md"
-                        : "text-gray-600 hover:text-[#d32f2f] hover:bg-red-50"
+                        : "text-gray-600 hover:bg-red-50 hover:text-[#d32f2f]"
                     }`}
                   >
                     {link.label}
@@ -137,21 +172,69 @@ export function Navbar() {
 
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="lg:hidden p-2 text-gray-600 hover:bg-red-50 rounded-full"
+            className="rounded-full p-2 text-gray-600 hover:bg-red-50 lg:hidden"
           >
             {isOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
       </nav>
 
+      {isEmployeeLoggedIn && isSiteDataPage && (
+        <div className="mt-4 w-[90%] max-w-[1300px] rounded-[22px] border border-[#e8e8e8] bg-white px-4 py-4 shadow-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-start gap-4">
+              <div className="flex h-[64px] w-[64px] items-center justify-center rounded-[16px] bg-[#E02323] text-white shadow-md">
+                <Droplets size={28} />
+              </div>
+
+              <div>
+                <h2 className="mb-1 text-[24px] font-bold text-black md:text-[28px]">
+                  بيانات الموقع
+                </h2>
+
+                <div className="flex flex-wrap items-center gap-4 text-[14px] font-medium text-[#87878C]">
+                  <span className="flex items-center gap-2">
+                    <MapPin size={16} />
+                    الموقع المركزي
+                  </span>
+
+                  <span className="flex items-center gap-2">
+                    <BarChart3 size={16} />
+                    إجمالي المتبرعين : {totalDonors}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <Link
+                href="/register"
+                className="flex h-[52px] items-center justify-center gap-2 rounded-[16px] bg-[#E02323] px-5 text-[16px] font-bold text-white transition hover:scale-[1.02] hover:shadow-md"
+              >
+                <UserPlus size={18} />
+                تسجيل متبرع جديد
+              </Link>
+
+              <button
+                onClick={handleLogout}
+                className="flex h-[52px] items-center justify-center gap-2 rounded-[16px] border border-[#87878C] bg-white px-5 text-[16px] font-bold text-black transition hover:bg-[#f8f8f8]"
+              >
+                <LogOut size={18} />
+                تسجيل الخروج
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isOpen && (
-        <div className="lg:hidden w-[90%] mt-4 bg-white rounded-3xl p-4 shadow-2xl border border-gray-50">
+        <div className="mt-4 w-[90%] rounded-3xl border border-gray-50 bg-white p-4 shadow-2xl lg:hidden">
           <div className="flex flex-col gap-2">
             {visibleNavLinks.map((link) => (
               <Link
                 key={link.label}
                 href={link.href}
-                className={`block px-6 py-4 text-center text-base font-bold rounded-2xl ${
+                className={`block rounded-2xl px-6 py-4 text-center text-base font-bold ${
                   pathname === link.href
                     ? "bg-[#d32f2f] text-white"
                     : "text-gray-700 hover:bg-red-50"
@@ -167,7 +250,7 @@ export function Navbar() {
                 <Link
                   key={link.label}
                   href={link.href}
-                  className={`block px-6 py-4 text-center text-base font-bold rounded-2xl ${
+                  className={`block rounded-2xl px-6 py-4 text-center text-base font-bold ${
                     pathname === link.href
                       ? "bg-[#d32f2f] text-white"
                       : "text-gray-700 hover:bg-red-50"
