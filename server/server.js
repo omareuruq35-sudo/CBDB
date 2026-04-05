@@ -4,6 +4,7 @@ const cors = require("cors");
 require("dotenv").config();
 
 const emergencyAdsRoutes = require("./routes/emergencyAdsRoutes");
+const donorRoutes = require("./routes/donorRoutes");
 
 const app = express();
 
@@ -16,7 +17,7 @@ mongoose
   .catch((err) => console.log("DB connection error:", err.message));
 
 app.use("/api/emergency-ads", emergencyAdsRoutes);
-
+app.use("/api/donors", donorRoutes);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
