@@ -9,7 +9,7 @@ import {DonationSection} from "@/components/blood-donation/DonationSection"
 export default function BloodDonationPage() {
   return (
     <main className="min-h-screen bg-[#ffffff] overflow-x-hidden">
-      
+     
       <Hero />
       <About />
       <DonationSection />

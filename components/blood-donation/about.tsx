@@ -2,24 +2,26 @@ import React from "react";
 
 export function About() {
   return (
-    <section className="w-full flex justify-center mt-32 py-20 pt-5  relative font-['Roboto']" dir="rtl">
+    <section
+      className="w-full flex justify-center mt-16 md:mt-24 py-12 md:py-16 relative font-['Roboto']"
+      dir="rtl"
+    >
 
-      {/* الكارت */}
-      <div className="w-[1248px] bg-white rounded-[12px] shadow-[0px_3px_25px_rgba(0,0,0,0.1)] px-16 py-12 relative overflow-hidden">
+      <div className="w-full max-w-[1100px] bg-white rounded-[12px] shadow-[0px_3px_25px_rgba(0,0,0,0.1)] px-4 sm:px-6 md:px-10 py-6 md:py-8 relative overflow-hidden">
 
         {/* العنوان */}
-        <div className="flex flex-col items-center mb-12">
+        <div className="flex flex-col items-center mb-8 md:mb-10">
 
-          <h2 className="text-[42px] font-semibold text-black text-center">
+          <h2 className="text-[26px] md:text-[32px] lg:text-[36px] font-semibold text-black text-center leading-[1.4]">
             فكرة إنشاء البنك المركزي للتبرع بالدم
           </h2>
 
-          <div className="w-[120px] h-[4px] bg-[#E02323] mt-4 rounded"></div>
+          <div className="w-[90px] md:w-[110px] h-[3px] md:h-[4px] bg-[#E02323] mt-3 md:mt-4 rounded"></div>
 
         </div>
 
         {/* النص */}
-        <div className="text-right space-y-6 text-[18px] leading-[2]">
+        <div className="text-right space-y-4 md:space-y-5 text-[14px] md:text-[16px] lg:text-[18px] leading-[1.9]">
 
           <p>
             - نشأت فكرة البنك المركزي للتبرع بالدم بناءً على عدة احتياجات مهمة وهي:
@@ -58,13 +60,13 @@ export function About() {
         </div>
 
         {/* الفوتر */}
-        <div className="text-center mt-14">
+        <div className="text-center mt-10 md:mt-12">
 
-          <p className="italic text-[20px] font-semibold">
+          <p className="italic text-[16px] md:text-[18px] lg:text-[20px] font-semibold">
             "معاً ننقذ حياة.. معاً نبني أمل"
           </p>
 
-          <p className="italic text-gray-500 mt-2">
+          <p className="italic text-gray-500 mt-2 text-sm md:text-base">
             البنك المركزي المصري للتبرع بالدم
           </p>
 
@@ -74,13 +76,13 @@ export function About() {
         <div
           className="absolute pointer-events-none"
           style={{
-            width: "235px",
-            height: "126px",
+            width: "180px",
+            height: "100px",
             background: "#E02323",
-            filter: "blur(200px)",
-            right: "20px",
-            bottom: "20px",
-            opacity: 0.4
+            filter: "blur(160px)",
+            right: "10px",
+            bottom: "10px",
+            opacity: 0.3
           }}
         ></div>
 
