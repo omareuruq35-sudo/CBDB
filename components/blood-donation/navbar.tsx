@@ -54,49 +54,22 @@ export function Navbar() {
     }
   }, [pathname])
 
-
-
-
-
   useEffect(() => {
-  const fetchDonorsCount = async () => {
-    try {
-      const res = await fetch("http://localhost:5000/api/donors")
-      const data = await res.json()
+    const fetchDonorsCount = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/donors")
+        const data = await res.json()
 
-      if (Array.isArray(data)) {
-        setTotalDonors(data.length)
-      } else if (Array.isArray(data?.donors)) {
-        setTotalDonors(data.donors.length)
-      } else {
-        setTotalDonors(0)
+        if (Array.isArray(data)) {
+          setTotalDonors(data.length)
+        }
+      } catch (error) {
+        console.error("Error fetching donors count:", error)
       }
-    } catch (error) {
-      console.error("Error fetching donors count:", error)
-      setTotalDonors(0)
     }
-  }
 
-  fetchDonorsCount()
-
-  const handleDonorsUpdated = () => {
     fetchDonorsCount()
-  }
-
-  window.addEventListener("donorsUpdated", handleDonorsUpdated)
-
-  return () => {
-    window.removeEventListener("donorsUpdated", handleDonorsUpdated)
-  }
-}, [pathname])
-
-
-
-
-
-
-
-
+  }, [pathname])
 
   useEffect(() => {
     const handleScroll = () => {

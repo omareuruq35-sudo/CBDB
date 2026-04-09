@@ -21,21 +21,20 @@ export function DonationSection() {
   ]
 
   return (
-    <section className="w-full px-4 py-12 md:px-6 md:py-16" dir="rtl">
-      
-      <div className="relative mx-auto w-full max-w-[1100px] bg-white px-4 py-6 md:px-6 md:py-8 rounded-[10px] shadow-[0px_3px_25px_rgba(0,0,0,0.09)]">
+    <section className="w-full px-4 py-20  md:px-6" dir="rtl">
+      <div className="relative mx-auto w-full max-w-[1248px] bg-white px-6 py-[30px]  rounded-[10px] shadow-[0px_3px_25px_rgba(0,0,0,0.09)] overflow-hidden">
 
-        {/* التوهج الأحمر */}
-        <div className="absolute right-[30px] md:right-[50px] bottom-[20px] md:bottom-[30px] h-[100px] w-[180px] md:h-[126px] md:w-[235px] bg-[#E02323] blur-[160px] md:blur-[200px] opacity-50 z-0" />
+        {/* Ellipse الخلفية */}
+        <div className="absolute right-[60px] bottom-[40px] h-[126px] w-[235px] bg-[#E02323] blur-[200px] opacity-60 z-0" />
 
-        <div className="relative z-10 flex flex-col items-center gap-6 md:gap-8">
+        <div className="relative z-10 flex flex-col items-center gap-10">
 
           {/* الجزء العلوي */}
-          <div className="flex w-full flex-col items-center gap-6 lg:flex-row lg:items-center lg:justify-between lg:gap-10">
+          <div className="flex w-full flex-col items-center gap-8 lg:flex-row lg:items-center lg:justify-between lg:gap-[67px]">
 
             {/* الصورة */}
             <div className="flex shrink-0 items-center justify-center">
-              <div className="relative h-[220px] w-[220px] md:h-[260px] md:w-[260px] lg:h-[300px] lg:w-[300px] rounded-full overflow-hidden shadow-[0px_3px_25px_rgba(0,0,0,0.09)]">
+              <div className="relative h-[320px] w-[320px] rounded-full overflow-hidden shadow-[0px_3px_25px_rgba(0,0,0,0.09)]">
                 <Image
                   src="/logo.png"
                   alt="Central Blood Donation Bank"
@@ -47,17 +46,17 @@ export function DonationSection() {
             </div>
 
             {/* النص */}
-            <div className="flex w-full max-w-[700px] flex-col items-end gap-4 text-right">
+            <div className="flex w-full max-w-[775px] flex-col items-end gap-4 text-right">
 
               <div className="flex w-full flex-col items-end gap-3">
 
-                <p className="text-[14px] md:text-[15px] lg:text-[16px] font-medium leading-7 tracking-[0.15px] text-black">
+                <p className="text-[16px] font-medium leading-6 tracking-[0.15px] text-black">
                   - يعبر شعار الموقع عن تعاون وتكاتف كل المصريين متمثلاً في علم
                   جمهورية مصر العربية في إنقاذ الأرواح بدمائهم في كل وقت وأي مكان
                   بالجمهورية.
                 </p>
 
-                <p className="text-[14px] md:text-[15px] lg:text-[16px] font-medium leading-7 tracking-[0.15px] text-black">
+                <p className="text-[16px] font-medium leading-6 tracking-[0.15px] text-black">
                   - تحت مظلة وزارة الصحة المصرية وإشرافها الكامل، نعمل سوياً
                   لبناء شبكة أمان وطنية تضمن توفير الدم الآمن والسليم لكل محتاج.
                 </p>
@@ -65,11 +64,11 @@ export function DonationSection() {
               </div>
 
               {/* البوكس الوردي */}
-              <div className="flex w-full max-w-[720px] items-center justify-start gap-2 rounded-[8px] bg-[#FCF7F7] px-3 py-3 shadow-[0px_3px_25px_rgba(0,0,0,0.09)]">
+              <div className="flex w-full max-w-[757px] items-center justify-start gap-2 rounded-[8px] bg-[#FCF7F7] px-2 py-3 shadow-[0px_3px_25px_rgba(0,0,0,0.09)]">
 
-                <span className="text-[16px] md:text-[18px]">🇪🇬</span>
+                <span className="text-[18px]">🇪🇬</span>
 
-                <p className="text-[14px] md:text-[15px] lg:text-[16px] font-semibold leading-7 tracking-[0.15px] text-black">
+                <p className="text-[16px] font-semibold leading-6 tracking-[0.15px] text-black">
                   مصر.. أرض الخير والعطاء، وشعبها قلب ينبض بالحياة لكل إنسان.
                 </p>
 
@@ -79,14 +78,14 @@ export function DonationSection() {
           </div>
 
           {/* الأيقونات */}
-          <div className="flex w-full max-w-[920px] flex-wrap items-center justify-center md:justify-between gap-6 md:gap-y-8 px-2 md:px-4">
+          <div className="flex w-full max-w-[990px] flex-wrap items-center justify-between gap-y-8 px-6">
 
             {features.map((item, index) => (
               <div
                 key={index}
-                className="flex min-w-[110px] flex-col items-center gap-2 text-center"
+                className="flex min-w-[120px] flex-col items-center gap-2 text-center"
               >
-                <div className="relative h-[22px] w-[22px] md:h-[24px] md:w-[24px] lg:h-[26px] lg:w-[26px]">
+                <div className="relative h-[26px] w-[26px]">
                   <Image
                     src={item.icon}
                     alt={item.title}
@@ -95,7 +94,7 @@ export function DonationSection() {
                   />
                 </div>
 
-                <p className="text-[14px] md:text-[15px] lg:text-[16px] font-medium leading-6 tracking-[0.15px] text-black">
+                <p className="text-[16px] font-medium leading-6 tracking-[0.15px] text-black">
                   {item.title}
                 </p>
 
@@ -106,7 +105,6 @@ export function DonationSection() {
 
         </div>
       </div>
-
     </section>
   )
 }

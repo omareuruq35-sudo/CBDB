@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import {
   Droplets,
   MapPin,
@@ -33,11 +32,6 @@ type Donor = {
 }
 
 export default function SiteDataPage() {
-  const router = useRouter()
-
-  const [isAuthorized, setIsAuthorized] = useState(false)
-  const [authChecking, setAuthChecking] = useState(true)
-
   const [donors, setDonors] = useState<Donor[]>([])
   const [loading, setLoading] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -52,20 +46,6 @@ export default function SiteDataPage() {
   })
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem("employeeLoggedIn") === "true"
-
-    if (!isLoggedIn) {
-      router.replace("/login")
-      return
-    }
-
-    setIsAuthorized(true)
-    setAuthChecking(false)
-  }, [router])
-
-  useEffect(() => {
-    if (!isAuthorized) return
-
     const fetchDonors = async () => {
       try {
         const res = await fetch("http://localhost:5000/api/donors")
@@ -73,8 +53,6 @@ export default function SiteDataPage() {
 
         if (Array.isArray(data)) {
           setDonors(data)
-        } else if (Array.isArray(data?.donors)) {
-          setDonors(data.donors)
         } else {
           setDonors([])
         }
@@ -87,7 +65,7 @@ export default function SiteDataPage() {
     }
 
     fetchDonors()
-  }, [isAuthorized])
+  }, [])
 
   const filteredDonors = useMemo(() => {
     return donors.filter((donor) => {
@@ -164,7 +142,6 @@ export default function SiteDataPage() {
 
       setDonors((prev) => prev.filter((donor) => donor._id !== id))
       setSelectedDonors((prev) => prev.filter((donorId) => donorId !== id))
-      window.dispatchEvent(new Event("donorsUpdated"))
       alert("تم حذف المتبرع بنجاح")
     } catch (error) {
       console.error("Delete error:", error)
@@ -225,7 +202,6 @@ export default function SiteDataPage() {
         prev.filter((donor) => !selectedDonors.includes(donor._id))
       )
       setSelectedDonors([])
-      window.dispatchEvent(new Event("donorsUpdated"))
       alert("تم حذف المتبرعين المحددين بنجاح")
     } catch (error) {
       console.error("Bulk delete error:", error)
@@ -244,24 +220,11 @@ export default function SiteDataPage() {
     filteredDonors.length > 0 &&
     filteredDonors.every((donor) => selectedDonors.includes(donor._id))
 
-  if (authChecking || !isAuthorized) {
-    return (
-      <main className="min-h-screen bg-[#66666]" dir="rtl">
-        <div className="px-4 pb-10 pt-[120px] md:px-6">
-          <div className="mx-auto max-w-[1300px]">
-            <div className="rounded-[16px] bg-white p-8 text-center shadow-[0px_10px_30px_rgba(0,0,0,0.12)]">
-              جاري التحقق من صلاحية الدخول...
-            </div>
-          </div>
-        </div>
-      </main>
-    )
-  }
-
   return (
     <main className="min-h-screen bg-[#66666]" dir="rtl">
       <div className="px-4 pb-10 pt-[120px] md:px-6">
         <div className="mx-auto max-w-[1300px] space-y-6">
+          {/* ================== Search Section ================== */}
           <section className="rounded-[16px] bg-white p-5 shadow-[0px_10px_30px_rgba(0,0,0,0.12)] transition hover:shadow-[0px_14px_36px_rgba(0,0,0,0.16)]">
             <div className="mb-6 flex items-start gap-4">
               <div className="flex h-[50px] w-[50px] items-center justify-center rounded-[8px] bg-[rgba(233,168,168,0.62)]">
@@ -368,6 +331,7 @@ export default function SiteDataPage() {
             </div>
           </section>
 
+          {/* ================== Donors Section ================== */}
           <section className="rounded-[16px] bg-white p-5 shadow-[0px_10px_30px_rgba(0,0,0,0.12)] transition hover:shadow-[0px_14px_36px_rgba(0,0,0,0.16)]">
             <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex items-start gap-4">
@@ -442,6 +406,7 @@ export default function SiteDataPage() {
             </div>
           </section>
 
+          {/* ================== Stats Section ================== */}
           <section className="rounded-[16px] bg-white p-5 shadow-[0px_10px_30px_rgba(0,0,0,0.12)] transition hover:shadow-[0px_14px_36px_rgba(0,0,0,0.16)]">
             <div className="mb-6 flex items-start gap-4">
               <div className="flex h-[50px] w-[50px] items-center justify-center rounded-[8px] bg-[rgba(233,168,168,0.62)]">

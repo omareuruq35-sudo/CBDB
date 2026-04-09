@@ -47,7 +47,7 @@ export default function RootLayout({
       {/* 3. ضفنا arimo.variable هنا في الـ body */}
       <body className={`${cairo.variable} ${roboto.variable} ${arimo.variable} font-sans antialiased`}>
         <Navbar />
-        <main className="pt-[190px] md:pt-[200px]">
+        <main className="pt-[210px] md:pt-[220px]">
    {children}
 </main>
        
