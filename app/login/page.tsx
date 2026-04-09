@@ -4,6 +4,19 @@ import { useState } from "react"
 import { Eye, EyeOff } from "lucide-react"
 import { useRouter } from "next/navigation"
 
+const employees = [
+  {
+    email: "admin@bank.com",
+    password: "123456",
+    name: "Admin",
+  },
+  {
+    email: "employee@bank.com",
+    password: "bank123",
+    name: "Employee",
+  },
+]
+
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -14,12 +27,26 @@ export default function LoginPage() {
 
   const handleLogin = () => {
     if (!email || !password) {
-      setError("من فضلك أدخل البريد الإلكتروني وكلمة المرور")
+      setError("من فضلك أدخل اسم المستخدم وكلمة المرور")
+      return
+    }
+
+    const matchedEmployee = employees.find(
+      (employee) =>
+        employee.email === email.trim() &&
+        employee.password === password.trim()
+    )
+
+    if (!matchedEmployee) {
+      setError("اسم المستخدم أو كلمة المرور غير صحيحة")
       return
     }
 
     setError("")
     localStorage.setItem("employeeLoggedIn", "true")
+    localStorage.setItem("employeeEmail", matchedEmployee.email)
+    localStorage.setItem("employeeName", matchedEmployee.name)
+    window.dispatchEvent(new Event("storage"))
     router.push("/site-data")
   }
 

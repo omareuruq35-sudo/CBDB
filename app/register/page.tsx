@@ -75,7 +75,6 @@ export default function RegisterPage() {
       }
 
       alert("تم التسجيل بنجاح 🎉")
-      window.location.href = "/site-data"
 
       setFormData({
         fullName: "",
