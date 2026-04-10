@@ -16,14 +16,17 @@ const emergencyAdSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-      maxlength: 500,
     },
     duration: {
       type: Number,
       required: true,
       enum: [6, 12, 24, 48, 72],
     },
-    expiresAt: {
+    createdAtDate: {
+      type: Date,
+      default: Date.now,
+    },
+    expiresAtDate: {
       type: Date,
       required: true,
     },
@@ -32,7 +35,9 @@ const emergencyAdSchema = new mongoose.Schema(
       default: true,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
 module.exports = mongoose.model("EmergencyAd", emergencyAdSchema);

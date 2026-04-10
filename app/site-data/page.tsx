@@ -66,26 +66,25 @@ export default function SiteDataPage() {
   useEffect(() => {
     if (!isAuthorized) return
 
-    const fetchDonors = async () => {
-      try {
-        const res = await fetch("http://localhost:5000/api/donors")
-        const data = await res.json()
+const fetchDonors = async () => {
+  try {
+    const res = await fetch("http://localhost:5000/api/donors")
 
-        if (Array.isArray(data)) {
-          setDonors(data)
-        } else if (Array.isArray(data?.donors)) {
-          setDonors(data.donors)
-        } else {
-          setDonors([])
-        }
-      } catch (error) {
-        console.error("Error fetching donors:", error)
-        setDonors([])
-      } finally {
-        setLoading(false)
-      }
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`)
     }
 
+    const text = await res.text()
+    console.log("RAW DONORS RESPONSE:", text)
+    setDonors([])
+    return
+  } catch (error) {
+    console.error("Error fetching donors:", error)
+    setDonors([])
+  } finally {
+    setLoading(false)
+  }
+}
     fetchDonors()
   }, [isAuthorized])
 
@@ -151,17 +150,22 @@ export default function SiteDataPage() {
     try {
       setDeletingId(id)
 
-      const res = await fetch(`http://localhost:5000/api/donors/${id}`, {
-        method: "DELETE",
-      })
+const res = await fetch(`http://localhost:5000/api/donors/${id}`, {
+  method: "DELETE",
+})
 
-      const data = await res.json()
+let data = null
 
-      if (!res.ok) {
-        alert(data.message || "حدث خطأ أثناء الحذف")
-        return
-      }
+try {
+  data = await res.json()
+} catch {
+  data = null
+}
 
+if (!res.ok) {
+  alert(data?.message || "حدث خطأ أثناء الحذف")
+  return
+}
       setDonors((prev) => prev.filter((donor) => donor._id !== id))
       setSelectedDonors((prev) => prev.filter((donorId) => donorId !== id))
       window.dispatchEvent(new Event("donorsUpdated"))
