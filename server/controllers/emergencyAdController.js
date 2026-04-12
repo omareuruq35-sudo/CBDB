@@ -100,7 +100,7 @@ const getActiveEmergencyAds = async (req, res) => {
     const ads = await EmergencyAd.find({ isActive: true }).sort({ createdAtDate: -1 });
 
     const formattedAds = ads.map((ad) => ({
-      id: ad._id,
+      id: ad._id.toString(),
       bloodType: ad.bloodType,
       governorate: ad.governorate,
       message: ad.message,
@@ -126,7 +126,36 @@ const getActiveEmergencyAds = async (req, res) => {
   }
 };
 
+// DELETE /api/emergency-ads/:id
+const deleteEmergencyAd = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const ad = await EmergencyAd.findById(id);
+
+    if (!ad) {
+      return res.status(404).json({
+        message: "الإعلان غير موجود",
+      });
+    }
+
+    ad.isActive = false;
+    await ad.save();
+
+    return res.status(200).json({
+      message: "تم حذف الإعلان بنجاح",
+      id: ad._id.toString(),
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "حصل خطأ أثناء حذف الإعلان",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   createEmergencyAd,
   getActiveEmergencyAds,
+  deleteEmergencyAd,
 };

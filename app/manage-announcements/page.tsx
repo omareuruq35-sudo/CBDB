@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown } from "lucide-react";
-//  fetch("http://localhost:5000/api/emergency-ads")
+import { ChevronDown, Trash2 } from "lucide-react";
 
 type BloodType = "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-";
 
@@ -71,24 +70,42 @@ function BloodBadge({ type }: { type: BloodType }) {
   );
 }
 
-function AdCard({ ad }: { ad: EmergencyAd }) {
+function AdCard({
+  ad,
+  onDelete,
+}: {
+  ad: EmergencyAd;
+  onDelete: (id: string) => void;
+}) {
   return (
-<div className="group rounded-[10px] border border-[#D5D5D5] bg-white px-6 py-8 transition-all duration-300 hover:-translate-y-1 hover:border-[#E02323] hover:shadow-md cursor-pointer">      
-<div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-  <div className="flex flex-wrap items-center justify-end gap-2 text-right">
-    <span className="text-lg font-bold text-[#817D7D]">{ad.governorate}</span>
-    <BloodBadge type={ad.bloodType} />
-  </div>
+    <div className="group rounded-[10px] border border-[#D5D5D5] bg-white px-6 py-8 transition-all duration-300 hover:-translate-y-1 hover:border-[#E02323] hover:shadow-md">
+      <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex flex-wrap items-center justify-end gap-2 text-right">
+          <span className="text-lg font-bold text-[#817D7D]">{ad.governorate}</span>
+          <BloodBadge type={ad.bloodType} />
+        </div>
 
-  <p className="text-sm font-light text-[#444444] sm:min-w-fit sm:text-left">
-    {ad.createdAt}
-  </p>
-</div>
+        <p className="text-sm font-light text-[#444444] sm:min-w-fit sm:text-left">
+          {ad.createdAt}
+        </p>
+      </div>
+
       <p className="mb-4 text-right text-lg font-normal text-black">{ad.message}</p>
 
-      <p className="text-right text-sm font-medium text-[#444444]">
-        ينتهي: {ad.expiresAt}
-      </p>
+      <div className="flex items-center justify-between gap-4">
+        <button
+          type="button"
+          onClick={() => onDelete(ad.id)}
+          className="flex h-[42px] items-center gap-2 rounded-[10px] border border-[#E02323] bg-[#E02323] px-4 text-sm font-bold text-white transition-all duration-300 hover:opacity-90 active:scale-[0.98]"
+        >
+          <Trash2 className="h-4 w-4" />
+          حذف الإعلان
+        </button>
+
+        <p className="text-right text-sm font-medium text-[#444444]">
+          ينتهي: {ad.expiresAt}
+        </p>
+      </div>
     </div>
   );
 }
@@ -112,6 +129,30 @@ export default function EmergencyAdsManagement() {
     setAds(data.ads || []);
   } catch (error) {
     console.error("Error fetching ads:", error);
+  }
+};
+
+const handleDeleteAd = async (id: string) => {
+  const confirmDelete = window.confirm("هل أنت متأكد أنك تريد حذف هذا الإعلان؟");
+
+  if (!confirmDelete) return;
+
+  try {
+    const res = await fetch(`http://localhost:5000/api/emergency-ads/${id}`, {
+      method: "DELETE",
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.message || "حصل خطأ أثناء حذف الإعلان");
+      return;
+    }
+
+    setAds((prev) => prev.filter((ad) => ad.id !== id));
+  } catch (error) {
+    console.error("Error deleting ad:", error);
+    alert("حصل خطأ في الاتصال بالسيرفر");
   }
 };
 
@@ -276,8 +317,9 @@ const handleSubmit = async (e: React.FormEvent) => {
 
               <div className="w-full space-y-6">
                 {ads.length > 0 ? (
-                  ads.map((ad) => <AdCard key={ad.id} ad={ad} />)
-                ) : (
+                  ads.map((ad) => (<AdCard key={ad.id} ad={ad} onDelete={handleDeleteAd} />
+                  ))
+                ): (
                   <div className="flex min-h-[220px] items-center justify-center rounded-[10px] border border-dashed border-[#D5D5D5] bg-white/70 px-6 py-10 text-center">
                     <p className="text-lg font-medium text-[#817D7D]">
                       لا توجد إعلانات طوارئ حالياً

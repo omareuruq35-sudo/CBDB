@@ -26,15 +26,7 @@ const arimo = Arimo({
 export const metadata: Metadata = {
   title: 'البنك المركزي المصري للتبرع بالدم',
   description: 'منصة مركزية لتنظيم وإدارة التبرع بالدم وفقاً للمعايير الصحية المعتمدة',
-  generator: 'v0.app',
-  icons: {
-    icon: [
-      { url: '/icon-light-32x32.png', media: '(prefers-color-scheme: light)' },
-      { url: '/icon-dark-32x32.png', media: '(prefers-color-scheme: dark)' },
-      { url: '/icon.svg', type: 'image/svg+xml' },
-    ],
-    apple: '/apple-icon.png',
-  },
+  
 }
 
 export default function RootLayout({
