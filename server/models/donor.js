@@ -47,6 +47,11 @@ const donorSchema = new mongoose.Schema(
       default: "",
       trim: true,
     },
+    source: {
+      type: String,
+      enum: ["user", "employee"],
+      default: "user",
+    },
   },
   { timestamps: true }
 );

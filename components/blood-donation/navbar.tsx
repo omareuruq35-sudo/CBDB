@@ -42,7 +42,7 @@ export function Navbar() {
 
   useEffect(() => {
     const checkLoginStatus = () => {
-      const status = localStorage.getItem("employeeLoggedIn")
+     const status = sessionStorage.getItem("employeeLoggedIn")
       setIsEmployeeLoggedIn(status === "true")
     }
 
@@ -54,49 +54,37 @@ export function Navbar() {
     }
   }, [pathname])
 
-
-
-
-
   useEffect(() => {
-  const fetchDonorsCount = async () => {
-    try {
-      const res = await fetch("http://localhost:5000/api/donors")
-      const data = await res.json()
+    const fetchDonorsCount = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/donors")
+        const data = await res.json()
 
-      if (Array.isArray(data)) {
-        setTotalDonors(data.length)
-      } else if (Array.isArray(data?.donors)) {
-        setTotalDonors(data.donors.length)
-      } else {
+        if (Array.isArray(data)) {
+          setTotalDonors(data.length)
+        } else if (Array.isArray(data?.donors)) {
+          setTotalDonors(data.donors.length)
+        } else {
+          setTotalDonors(0)
+        }
+      } catch (error) {
+        console.error("Error fetching donors count:", error)
         setTotalDonors(0)
       }
-    } catch (error) {
-      console.error("Error fetching donors count:", error)
-      setTotalDonors(0)
     }
-  }
 
-  fetchDonorsCount()
-
-  const handleDonorsUpdated = () => {
     fetchDonorsCount()
-  }
 
-  window.addEventListener("donorsUpdated", handleDonorsUpdated)
+    const handleDonorsUpdated = () => {
+      fetchDonorsCount()
+    }
 
-  return () => {
-    window.removeEventListener("donorsUpdated", handleDonorsUpdated)
-  }
-}, [pathname])
+    window.addEventListener("donorsUpdated", handleDonorsUpdated)
 
-
-
-
-
-
-
-
+    return () => {
+      window.removeEventListener("donorsUpdated", handleDonorsUpdated)
+    }
+  }, [pathname])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -128,8 +116,12 @@ export function Navbar() {
     return navLinks
   }, [isEmployeeLoggedIn])
 
+  const handleOpenAddDonorModal = () => {
+    window.dispatchEvent(new Event("openAddDonorModal"))
+  }
+
   const handleLogout = () => {
-    localStorage.removeItem("employeeLoggedIn")
+    sessionStorage.removeItem("employeeLoggedIn")
     setIsEmployeeLoggedIn(false)
     window.dispatchEvent(new Event("storage"))
     router.push("/")
@@ -234,13 +226,13 @@ export function Navbar() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <Link
-                href="/register"
+              <button
+                onClick={handleOpenAddDonorModal}
                 className="flex h-[52px] items-center justify-center gap-2 rounded-[16px] bg-[#E02323] px-5 text-[16px] font-bold text-white transition hover:scale-[1.02] hover:shadow-md"
               >
                 <UserPlus size={18} />
                 تسجيل متبرع جديد
-              </Link>
+              </button>
 
               <button
                 onClick={handleLogout}

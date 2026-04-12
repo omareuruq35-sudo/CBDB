@@ -43,9 +43,10 @@ export default function LoginPage() {
     }
 
     setError("")
-    localStorage.setItem("employeeLoggedIn", "true")
-    localStorage.setItem("employeeEmail", matchedEmployee.email)
-    localStorage.setItem("employeeName", matchedEmployee.name)
+    sessionStorage.setItem("employeeLoggedIn", "true")
+sessionStorage.setItem("employeeEmail", matchedEmployee.email)
+sessionStorage.setItem("employeeName", matchedEmployee.name)
+    
     window.dispatchEvent(new Event("storage"))
     router.push("/site-data")
   }
