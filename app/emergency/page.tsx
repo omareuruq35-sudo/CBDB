@@ -13,7 +13,7 @@ import {
 type BloodType = "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-";
 
 type EmergencyAd = {
-  _id: string;
+  id: string;
   governorate: string;
   bloodType: BloodType;
   locationNote: string;
@@ -237,7 +237,7 @@ useEffect(() => {
                 <div className="flex flex-col gap-[62px]">
               {ads.map((ad, index) => (
                 <EmergencyCard
-                  key={ad._id ? ad._id : `${ad.governorate}-${ad.createdAt}-${index}`}
+                  key={ad.id ? ad.id : `${ad.governorate}-${ad.createdAt}-${index}`}
                   ad={ad}
                 />
               ))}                </div>
