@@ -13,6 +13,7 @@ const createDonor = async (req, res) => {
       donationCount,
       lastDonationDate,
       notes,
+      source,
     } = req.body;
 
     if (
@@ -54,6 +55,7 @@ const createDonor = async (req, res) => {
       donationCount: donationCount || 0,
       lastDonationDate: lastDonationDate || null,
       notes: notes || "",
+      source: source === "employee" ? "employee" : "user",
     });
 
     return res.status(201).json({

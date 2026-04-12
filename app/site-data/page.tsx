@@ -16,6 +16,9 @@ import {
   Circle,
   Phone,
   Trash2,
+  X,
+  CalendarDays,
+  Plus,
 } from "lucide-react"
 
 type Donor = {
@@ -30,6 +33,27 @@ type Donor = {
   lastDonationDate?: string | null
   notes?: string
   createdAt?: string
+  source?: "user" | "employee"
+}
+
+type AddDonorForm = {
+  fullName: string
+  nationalId: string
+  phone: string
+  email: string
+  governorate: string
+  bloodType: string
+  notes: string
+}
+
+const initialAddDonorForm: AddDonorForm = {
+  fullName: "",
+  nationalId: "",
+  phone: "",
+  email: "",
+  governorate: "",
+  bloodType: "",
+  notes: "",
 }
 
 export default function SiteDataPage() {
@@ -44,6 +68,11 @@ export default function SiteDataPage() {
   const [deletingSelected, setDeletingSelected] = useState(false)
   const [selectedDonors, setSelectedDonors] = useState<string[]>([])
 
+  const [showAddDonorModal, setShowAddDonorModal] = useState(false)
+  const [creatingDonor, setCreatingDonor] = useState(false)
+  const [addDonorForm, setAddDonorForm] =
+    useState<AddDonorForm>(initialAddDonorForm)
+
   const [filters, setFilters] = useState({
     governorate: "جميع المحافظات",
     bloodType: "جميع الفصائل",
@@ -52,8 +81,7 @@ export default function SiteDataPage() {
   })
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem("employeeLoggedIn") === "true"
-
+const isLoggedIn = sessionStorage.getItem("employeeLoggedIn") === "true"
     if (!isLoggedIn) {
       router.replace("/login")
       return
@@ -66,27 +94,50 @@ export default function SiteDataPage() {
   useEffect(() => {
     if (!isAuthorized) return
 
-const fetchDonors = async () => {
-  try {
-    const res = await fetch("http://localhost:5000/api/donors")
+    const fetchDonors = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/donors")
 
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`)
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`)
+        }
+
+        const data = await res.json()
+        setDonors(Array.isArray(data) ? data : [])
+      } catch (error) {
+        console.error("Error fetching donors:", error)
+        setDonors([])
+      } finally {
+        setLoading(false)
+      }
     }
 
-    const text = await res.text()
-    console.log("RAW DONORS RESPONSE:", text)
-    setDonors([])
-    return
-  } catch (error) {
-    console.error("Error fetching donors:", error)
-    setDonors([])
-  } finally {
-    setLoading(false)
-  }
-}
     fetchDonors()
   }, [isAuthorized])
+
+  useEffect(() => {
+    const handleOpenModal = () => {
+      setAddDonorForm(initialAddDonorForm)
+      setShowAddDonorModal(true)
+    }
+
+    window.addEventListener("openAddDonorModal", handleOpenModal)
+
+    return () => {
+      window.removeEventListener("openAddDonorModal", handleOpenModal)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!showAddDonorModal) return
+
+    const originalOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+
+    return () => {
+      document.body.style.overflow = originalOverflow
+    }
+  }, [showAddDonorModal])
 
   const filteredDonors = useMemo(() => {
     return donors.filter((donor) => {
@@ -98,11 +149,13 @@ const fetchDonors = async () => {
         filters.bloodType === "جميع الفصائل" ||
         donor.bloodType === filters.bloodType
 
-      const matchName = donor.fullName
+      const matchName = (donor.fullName || "")
         .toLowerCase()
         .includes(filters.fullName.toLowerCase())
 
-      const matchNationalId = donor.nationalId.includes(filters.nationalId)
+      const matchNationalId = (donor.nationalId || "").includes(
+        filters.nationalId
+      )
 
       return (
         matchGovernorate &&
@@ -143,6 +196,109 @@ const fetchDonors = async () => {
     })
   }
 
+  const handleAddDonorInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    setAddDonorForm((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }))
+  }
+
+  const closeAddDonorModal = () => {
+    if (creatingDonor) return
+    setShowAddDonorModal(false)
+    setAddDonorForm(initialAddDonorForm)
+  }
+
+  const handleCreateDonor = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+
+    if (!addDonorForm.fullName.trim()) {
+      alert("من فضلك أدخل الاسم رباعي")
+      return
+    }
+
+    if (!/^\d{14}$/.test(addDonorForm.nationalId.trim())) {
+      alert("الرقم القومي يجب أن يكون 14 رقم")
+      return
+    }
+
+    if (!/^01[0125]\d{8}$/.test(addDonorForm.phone.trim())) {
+      alert("رقم الهاتف غير صحيح")
+      return
+    }
+
+    if (!addDonorForm.email.trim()) {
+      alert("من فضلك أدخل البريد الإلكتروني")
+      return
+    }
+
+    if (!addDonorForm.governorate.trim()) {
+      alert("من فضلك اختر المحافظة")
+      return
+    }
+
+    if (!addDonorForm.bloodType.trim()) {
+      alert("من فضلك اختر فصيلة الدم")
+      return
+    }
+
+    try {
+      setCreatingDonor(true)
+
+      const payload = {
+        fullName: addDonorForm.fullName.trim(),
+        nationalId: addDonorForm.nationalId.trim(),
+        phone: addDonorForm.phone.trim(),
+        email: addDonorForm.email.trim(),
+        governorate: addDonorForm.governorate.trim(),
+        bloodType: addDonorForm.bloodType.trim(),
+        notes: addDonorForm.notes.trim(),
+        source: "employee",
+      }
+
+      const res = await fetch("http://localhost:5000/api/donors", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+
+      let data: { donor?: Donor; message?: string } | null = null
+
+      try {
+        data = await res.json()
+      } catch {
+        data = null
+      }
+
+      if (!res.ok) {
+        alert(data?.message || "حدث خطأ أثناء تسجيل المتبرع")
+        return
+      }
+
+      const newDonor = data?.donor
+
+      if (!newDonor) {
+        alert("تم الحفظ لكن بيانات المتبرع لم ترجع بشكل صحيح")
+        return
+      }
+
+      setDonors((prev) => [newDonor, ...prev])
+      setShowAddDonorModal(false)
+      setAddDonorForm(initialAddDonorForm)
+      window.dispatchEvent(new Event("donorsUpdated"))
+      alert("تم تسجيل المتبرع بنجاح")
+    } catch (error) {
+      console.error("Create donor error:", error)
+      alert("حدث خطأ أثناء تسجيل المتبرع")
+    } finally {
+      setCreatingDonor(false)
+    }
+  }
+
   const handleDeleteDonor = async (id: string) => {
     const confirmDelete = window.confirm("هل أنت متأكد أنك تريد حذف هذا المتبرع؟")
     if (!confirmDelete) return
@@ -150,22 +306,23 @@ const fetchDonors = async () => {
     try {
       setDeletingId(id)
 
-const res = await fetch(`http://localhost:5000/api/donors/${id}`, {
-  method: "DELETE",
-})
+      const res = await fetch(`http://localhost:5000/api/donors/${id}`, {
+        method: "DELETE",
+      })
 
-let data = null
+      let data = null
 
-try {
-  data = await res.json()
-} catch {
-  data = null
-}
+      try {
+        data = await res.json()
+      } catch {
+        data = null
+      }
 
-if (!res.ok) {
-  alert(data?.message || "حدث خطأ أثناء الحذف")
-  return
-}
+      if (!res.ok) {
+        alert(data?.message || "حدث خطأ أثناء الحذف")
+        return
+      }
+
       setDonors((prev) => prev.filter((donor) => donor._id !== id))
       setSelectedDonors((prev) => prev.filter((donorId) => donorId !== id))
       window.dispatchEvent(new Event("donorsUpdated"))
@@ -263,238 +420,415 @@ if (!res.ok) {
   }
 
   return (
-    <main className="min-h-screen bg-[#66666]" dir="rtl">
-      <div className="px-4 pb-10 pt-[120px] md:px-6">
-        <div className="mx-auto max-w-[1300px] space-y-6">
-          <section className="rounded-[16px] bg-white p-5 shadow-[0px_10px_30px_rgba(0,0,0,0.12)] transition hover:shadow-[0px_14px_36px_rgba(0,0,0,0.16)]">
-            <div className="mb-6 flex items-start gap-4">
-              <div className="flex h-[50px] w-[50px] items-center justify-center rounded-[8px] bg-[rgba(233,168,168,0.62)]">
-                <Search size={24} className="text-[#E02323]" />
-              </div>
-
-              <div>
-                <h2 className="text-[22px] font-bold text-black md:text-[24px]">
-                  بحث متقدم عن المتبرعين
-                </h2>
-                <p className="mt-1 text-[15px] font-medium text-[#818181] md:text-[16px]">
-                  ابحث عن المتبرعين باستخدام الفلاتر المختلفة
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <FilterSelect
-                name="governorate"
-                value={filters.governorate}
-                onChange={handleFilterChange}
-                label="المحافظة"
-                icon={<MapPin size={18} className="text-[#E02323]" />}
-                options={[
-                  "جميع المحافظات",
-                  "القاهرة",
-                  "الجيزة",
-                  "الإسكندرية",
-                  "الدقهلية",
-                  "البحر الأحمر",
-                  "البحيرة",
-                  "الفيوم",
-                  "الغربية",
-                  "الإسماعيلية",
-                  "المنوفية",
-                  "المنيا",
-                  "القليوبية",
-                  "الوادي الجديد",
-                  "السويس",
-                  "أسوان",
-                  "أسيوط",
-                  "بني سويف",
-                  "بورسعيد",
-                  "دمياط",
-                  "الشرقية",
-                  "جنوب سيناء",
-                  "كفر الشيخ",
-                  "مطروح",
-                  "الأقصر",
-                  "قنا",
-                  "شمال سيناء",
-                  "سوهاج",
-                ]}
-              />
-
-              <FilterSelect
-                name="bloodType"
-                value={filters.bloodType}
-                onChange={handleFilterChange}
-                label="فصيلة الدم"
-                icon={<Droplets size={18} className="text-[#E02323]" />}
-                options={[
-                  "جميع الفصائل",
-                  "A+",
-                  "A-",
-                  "B+",
-                  "B-",
-                  "AB+",
-                  "AB-",
-                  "O+",
-                  "O-",
-                ]}
-              />
-
-              <FilterInput
-                name="fullName"
-                value={filters.fullName}
-                onChange={handleFilterChange}
-                label="الاسم"
-                icon={<User size={18} className="text-[#E02323]" />}
-                placeholder="بحث بالاسم"
-              />
-
-              <FilterInput
-                name="nationalId"
-                value={filters.nationalId}
-                onChange={handleFilterChange}
-                label="الرقم القومي"
-                icon={<CreditCard size={18} className="text-[#E02323]" />}
-                placeholder="14 رقم"
-              />
-            </div>
-
-            <div className="mt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <button className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[18px] bg-[#E02323] px-6 text-[18px] font-bold text-white transition hover:scale-[1.02] hover:shadow-lg md:w-[146px]">
-                <Search size={20} />
-                بحث
-              </button>
-
-              <div className="flex items-center gap-2 text-[15px] font-semibold text-[#818181]">
-                <BarChart3 size={18} className="text-[#E02323]" />
-                إجمالي النتائج : {filteredDonors.length}
-              </div>
-            </div>
-          </section>
-
-          <section className="rounded-[16px] bg-white p-5 shadow-[0px_10px_30px_rgba(0,0,0,0.12)] transition hover:shadow-[0px_14px_36px_rgba(0,0,0,0.16)]">
-            <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div className="flex items-start gap-4">
+    <>
+      <main className="min-h-screen bg-[#66666]" dir="rtl">
+        <div
+          className={`px-4 pb-10 pt-[120px] md:px-6 ${
+            showAddDonorModal ? "pointer-events-none select-none" : ""
+          }`}
+        >
+          <div
+            className={`mx-auto max-w-[1300px] space-y-6 transition duration-300 ${
+              showAddDonorModal ? "blur-[4px]" : ""
+            }`}
+          >
+            <section className="rounded-[16px] bg-white p-5 shadow-[0px_10px_30px_rgba(0,0,0,0.12)] transition hover:shadow-[0px_14px_36px_rgba(0,0,0,0.16)]">
+              <div className="mb-6 flex items-start gap-4">
                 <div className="flex h-[50px] w-[50px] items-center justify-center rounded-[8px] bg-[rgba(233,168,168,0.62)]">
-                  <Users size={24} className="text-[#E02323]" />
+                  <Search size={24} className="text-[#E02323]" />
                 </div>
 
                 <div>
                   <h2 className="text-[22px] font-bold text-black md:text-[24px]">
-                    قائمة المتبرعين
+                    بحث متقدم عن المتبرعين
                   </h2>
                   <p className="mt-1 text-[15px] font-medium text-[#818181] md:text-[16px]">
-                    إدارة وتعديل بيانات المتبرعين المسجلين
+                    ابحث عن المتبرعين باستخدام الفلاتر المختلفة
                   </p>
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3">
-                <label className="flex items-center gap-3 text-[17px] text-black">
-                  <span>تحديد الكل</span>
-                  <input
-                    type="checkbox"
-                    className="h-[20px] w-[20px]"
-                    checked={allFilteredSelected}
-                    onChange={handleSelectAll}
-                  />
-                </label>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <FilterSelect
+                  name="governorate"
+                  value={filters.governorate}
+                  onChange={handleFilterChange}
+                  label="المحافظة"
+                  icon={<MapPin size={18} className="text-[#E02323]" />}
+                  options={[
+                    "جميع المحافظات",
+                    "القاهرة",
+                    "الجيزة",
+                    "الإسكندرية",
+                    "الدقهلية",
+                    "البحر الأحمر",
+                    "البحيرة",
+                    "الفيوم",
+                    "الغربية",
+                    "الإسماعيلية",
+                    "المنوفية",
+                    "المنيا",
+                    "القليوبية",
+                    "الوادي الجديد",
+                    "السويس",
+                    "أسوان",
+                    "أسيوط",
+                    "بني سويف",
+                    "بورسعيد",
+                    "دمياط",
+                    "الشرقية",
+                    "جنوب سيناء",
+                    "كفر الشيخ",
+                    "مطروح",
+                    "الأقصر",
+                    "قنا",
+                    "شمال سيناء",
+                    "سوهاج",
+                  ]}
+                />
 
-                <button
-                  onClick={handleDeleteSelected}
-                  disabled={deletingSelected || selectedDonors.length === 0}
-                  className="flex items-center gap-2 rounded-[12px] border border-[#E02323] px-4 py-2 text-[15px] font-medium text-[#E02323] transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <Trash2 size={16} />
-                  {deletingSelected ? "جارٍ الحذف..." : "حذف المحدد"}
+                <FilterSelect
+                  name="bloodType"
+                  value={filters.bloodType}
+                  onChange={handleFilterChange}
+                  label="فصيلة الدم"
+                  icon={<Droplets size={18} className="text-[#E02323]" />}
+                  options={[
+                    "جميع الفصائل",
+                    "A+",
+                    "A-",
+                    "B+",
+                    "B-",
+                    "AB+",
+                    "AB-",
+                    "O+",
+                    "O-",
+                  ]}
+                />
+
+                <FilterInput
+                  name="fullName"
+                  value={filters.fullName}
+                  onChange={handleFilterChange}
+                  label="الاسم"
+                  icon={<User size={18} className="text-[#E02323]" />}
+                  placeholder="بحث بالاسم"
+                />
+
+                <FilterInput
+                  name="nationalId"
+                  value={filters.nationalId}
+                  onChange={handleFilterChange}
+                  label="الرقم القومي"
+                  icon={<CreditCard size={18} className="text-[#E02323]" />}
+                  placeholder="14 رقم"
+                />
+              </div>
+
+              <div className="mt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <button className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[18px] bg-[#E02323] px-6 text-[18px] font-bold text-white transition hover:scale-[1.02] hover:shadow-lg md:w-[146px]">
+                  <Search size={20} />
+                  بحث
                 </button>
+
+                <div className="flex items-center gap-2 text-[15px] font-semibold text-[#818181]">
+                  <BarChart3 size={18} className="text-[#E02323]" />
+                  إجمالي النتائج : {filteredDonors.length}
+                </div>
               </div>
-            </div>
+            </section>
 
-            <div className="mb-4 hidden rounded-[10px] border border-[rgba(208,207,206,0.2)] bg-[rgba(208,207,206,0.15)] px-4 py-4 lg:grid lg:grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_190px] lg:items-center">
-              <span className="font-semibold text-black">المتبرع</span>
-              <span className="font-semibold text-black">فصيلة الدم</span>
-              <span className="font-semibold text-black">الموقع</span>
-              <span className="font-semibold text-black">آخر تبرع</span>
-              <span className="font-semibold text-black">سجل التبرعات</span>
-              <span className="font-semibold text-black">الاتصال</span>
-              <span className="font-semibold text-black">الإجراءات</span>
-            </div>
+            <section className="rounded-[16px] bg-white p-5 shadow-[0px_10px_30px_rgba(0,0,0,0.12)] transition hover:shadow-[0px_14px_36px_rgba(0,0,0,0.16)]">
+              <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-[50px] w-[50px] items-center justify-center rounded-[8px] bg-[rgba(233,168,168,0.62)]">
+                    <Users size={24} className="text-[#E02323]" />
+                  </div>
 
-            <div className="space-y-4">
-              {loading ? (
-                <p className="py-6 text-center text-[16px] text-[#818181]">
-                  جاري تحميل البيانات...
-                </p>
-              ) : filteredDonors.length === 0 ? (
-                <p className="py-6 text-center text-[16px] text-[#818181]">
-                  لا يوجد متبرعين مطابقين للبحث
-                </p>
-              ) : (
-                filteredDonors.map((donor) => (
-                  <DonorRow
-                    key={donor._id}
-                    donor={donor}
-                    formatLastDonation={formatLastDonation}
-                    onDelete={handleDeleteDonor}
-                    deleting={deletingId === donor._id}
-                    checked={selectedDonors.includes(donor._id)}
-                    onSelect={handleSelectDonor}
-                  />
-                ))
-              )}
-            </div>
-          </section>
+                  <div>
+                    <h2 className="text-[22px] font-bold text-black md:text-[24px]">
+                      قائمة المتبرعين
+                    </h2>
+                    <p className="mt-1 text-[15px] font-medium text-[#818181] md:text-[16px]">
+                      إدارة وتعديل بيانات المتبرعين المسجلين
+                    </p>
+                  </div>
+                </div>
 
-          <section className="rounded-[16px] bg-white p-5 shadow-[0px_10px_30px_rgba(0,0,0,0.12)] transition hover:shadow-[0px_14px_36px_rgba(0,0,0,0.16)]">
-            <div className="mb-6 flex items-start gap-4">
-              <div className="flex h-[50px] w-[50px] items-center justify-center rounded-[8px] bg-[rgba(233,168,168,0.62)]">
-                <BarChart3 size={24} className="text-[#E02323]" />
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className="flex items-center gap-3 text-[17px] text-black">
+                    <span>تحديد الكل</span>
+                    <input
+                      type="checkbox"
+                      className="h-[20px] w-[20px]"
+                      checked={allFilteredSelected}
+                      onChange={handleSelectAll}
+                    />
+                  </label>
+
+                  <button
+                    onClick={handleDeleteSelected}
+                    disabled={deletingSelected || selectedDonors.length === 0}
+                    className="flex items-center gap-2 rounded-[12px] border border-[#E02323] px-4 py-2 text-[15px] font-medium text-[#E02323] transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Trash2 size={16} />
+                    {deletingSelected ? "جارٍ الحذف..." : "حذف المحدد"}
+                  </button>
+                </div>
               </div>
 
-              <div>
-                <h2 className="text-[22px] font-bold text-black md:text-[24px]">
-                  إحصائيات البحث
-                </h2>
-                <p className="mt-1 text-[16px] font-medium text-[#818181]">
-                  تحليل بيانات المتبرعين
-                </p>
+              <div className="mb-4 hidden rounded-[10px] border border-[rgba(208,207,206,0.2)] bg-[rgba(208,207,206,0.15)] px-4 py-4 lg:grid lg:grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_190px] lg:items-center">
+                <span className="font-semibold text-black">المتبرع</span>
+                <span className="font-semibold text-black">فصيلة الدم</span>
+                <span className="font-semibold text-black">الموقع</span>
+                <span className="font-semibold text-black">آخر تبرع</span>
+                <span className="font-semibold text-black">سجل التبرعات</span>
+                <span className="font-semibold text-black">الاتصال</span>
+                <span className="font-semibold text-black">الإجراءات</span>
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <StatCard
-                icon={<Users size={22} className="text-[#E02323]" />}
-                iconBg="bg-[rgba(233,168,168,0.21)]"
-                value={String(totalDonors)}
-                label="إجمالي المتبرعين"
-              />
+              <div className="space-y-4">
+                {loading ? (
+                  <p className="py-6 text-center text-[16px] text-[#818181]">
+                    جاري تحميل البيانات...
+                  </p>
+                ) : filteredDonors.length === 0 ? (
+                  <p className="py-6 text-center text-[16px] text-[#818181]">
+                    لا يوجد متبرعين مطابقين للبحث
+                  </p>
+                ) : (
+                  filteredDonors.map((donor) => (
+                    <DonorRow
+                      key={donor._id}
+                      donor={donor}
+                      formatLastDonation={formatLastDonation}
+                      onDelete={handleDeleteDonor}
+                      deleting={deletingId === donor._id}
+                      checked={selectedDonors.includes(donor._id)}
+                      onSelect={handleSelectDonor}
+                    />
+                  ))
+                )}
+              </div>
+            </section>
 
-              <StatCard
-                icon={<Circle size={18} className="text-[#818181]" />}
-                iconBg="bg-[rgba(217,217,217,0.24)]"
-                value={String(neverDonated)}
-                label="لم يتبرعوا بعد"
-              />
+            <section className="rounded-[16px] bg-white p-5 shadow-[0px_10px_30px_rgba(0,0,0,0.12)] transition hover:shadow-[0px_14px_36px_rgba(0,0,0,0.16)]">
+              <div className="mb-6 flex items-start gap-4">
+                <div className="flex h-[50px] w-[50px] items-center justify-center rounded-[8px] bg-[rgba(233,168,168,0.62)]">
+                  <BarChart3 size={24} className="text-[#E02323]" />
+                </div>
 
-              <StatCard
-                icon={<Check size={22} className="text-[#9CD256]" />}
-                iconBg="bg-[rgba(206,237,197,0.3)]"
-                value={String(moreThanThree)}
-                label="أكثر من 3 تبرعات"
-              />
+                <div>
+                  <h2 className="text-[22px] font-bold text-black md:text-[24px]">
+                    إحصائيات البحث
+                  </h2>
+                  <p className="mt-1 text-[16px] font-medium text-[#818181]">
+                    تحليل بيانات المتبرعين
+                  </p>
+                </div>
+              </div>
 
-              <StatCard
-                icon={<Clock3 size={22} className="text-[#2DB5EF]" />}
-                iconBg="bg-[rgba(195,226,229,0.35)]"
-                value={String(donatedThisWeek)}
-                label="آخر تبرع خلال أسبوع"
-              />
-            </div>
-          </section>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <StatCard
+                  icon={<Users size={22} className="text-[#E02323]" />}
+                  iconBg="bg-[rgba(233,168,168,0.21)]"
+                  value={String(totalDonors)}
+                  label="إجمالي المتبرعين"
+                />
+
+                <StatCard
+                  icon={<Circle size={18} className="text-[#818181]" />}
+                  iconBg="bg-[rgba(217,217,217,0.24)]"
+                  value={String(neverDonated)}
+                  label="لم يتبرعوا بعد"
+                />
+
+                <StatCard
+                  icon={<Check size={22} className="text-[#9CD256]" />}
+                  iconBg="bg-[rgba(206,237,197,0.3)]"
+                  value={String(moreThanThree)}
+                  label="أكثر من 3 تبرعات"
+                />
+
+                <StatCard
+                  icon={<Clock3 size={22} className="text-[#2DB5EF]" />}
+                  iconBg="bg-[rgba(195,226,229,0.35)]"
+                  value={String(donatedThisWeek)}
+                  label="آخر تبرع خلال أسبوع"
+                />
+              </div>
+            </section>
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+
+      {showAddDonorModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/20 px-3 py-6 backdrop-blur-[6px] animate-in fade-in duration-300">
+          <div className="relative max-h-[92vh] w-full max-w-[860px] overflow-y-auto rounded-[15px] border border-[#E2E2E2] bg-[#FEFEFE] shadow-[0px_3px_30px_rgba(0,0,0,0.09)] animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
+            <div className="relative flex min-h-[115px] items-center justify-center rounded-t-[15px] border-b border-[rgba(129,129,129,0.16)] bg-[rgba(240,240,240,0.12)] px-6 shadow-[0px_4px_4px_rgba(0,0,0,0.06)]">
+              <h2 className="text-center text-[28px] font-semibold text-black md:text-[36px]">
+                تسجيل متبرع جديد
+              </h2>
+
+              <button
+                type="button"
+                onClick={closeAddDonorModal}
+                disabled={creatingDonor}
+                className="absolute right-4 top-1/2 flex h-[47px] w-[47px] -translate-y-1/2 items-center justify-center rounded-full bg-[rgba(217,217,217,0.46)] transition hover:scale-105 disabled:cursor-not-allowed"
+              >
+                <X size={29} className="text-[#626262]" strokeWidth={3} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateDonor}>
+              <div className="px-4 pb-5 pt-5 md:px-6">
+                <div className="rounded-[20px] border border-[rgba(129,129,129,0.31)] px-4 py-5 md:px-6 md:py-6">
+                  <h3 className="mb-6 text-right text-[22px] font-semibold text-black md:text-[26px]">
+                    بيانات المتبرع الجديد
+                  </h3>
+
+                  <div className="grid grid-cols-1 gap-x-5 gap-y-5 md:grid-cols-2">
+                    <ModalField
+                      label="الاسم رباعي *"
+                      name="fullName"
+                      value={addDonorForm.fullName}
+                      onChange={handleAddDonorInputChange}
+                      placeholder=""
+                    />
+
+                    <ModalField
+                      label="الرقم القومي (14 رقم) *"
+                      name="nationalId"
+                      value={addDonorForm.nationalId}
+                      onChange={handleAddDonorInputChange}
+                      placeholder="14 رقم بدون مسافات"
+                      hint="يجب أن يكون 14 رقم"
+                    />
+
+                    <ModalField
+                      label="رقم الهاتف (11رقم) *"
+                      name="phone"
+                      value={addDonorForm.phone}
+                      onChange={handleAddDonorInputChange}
+                      placeholder="مثال : 01012345678"
+                      hint="يجب أن يبدأ ب011 أو010 أو012 أو015"
+                    />
+
+                    <ModalField
+                      label="البريد الإلكتروني"
+                      name="email"
+                      type="email"
+                      value={addDonorForm.email}
+                      onChange={handleAddDonorInputChange}
+                      placeholder="example@gmail.com"
+                      hint="لإرسال إشعارات التبرع"
+                    />
+
+                    <ModalSelectField
+                      label="المحافظة *"
+                      name="governorate"
+                      value={addDonorForm.governorate}
+                      onChange={handleAddDonorInputChange}
+                      placeholder="اختر المحافظة"
+                      options={[
+                        "القاهرة",
+                        "الجيزة",
+                        "الإسكندرية",
+                        "الدقهلية",
+                        "البحر الأحمر",
+                        "البحيرة",
+                        "الفيوم",
+                        "الغربية",
+                        "الإسماعيلية",
+                        "المنوفية",
+                        "المنيا",
+                        "القليوبية",
+                        "الوادي الجديد",
+                        "السويس",
+                        "أسوان",
+                        "أسيوط",
+                        "بني سويف",
+                        "بورسعيد",
+                        "دمياط",
+                        "الشرقية",
+                        "جنوب سيناء",
+                        "كفر الشيخ",
+                        "مطروح",
+                        "الأقصر",
+                        "قنا",
+                        "شمال سيناء",
+                        "سوهاج",
+                      ]}
+                    />
+
+                    <ModalSelectField
+                      label="فصيلة الدم *"
+                      name="bloodType"
+                      value={addDonorForm.bloodType}
+                      onChange={handleAddDonorInputChange}
+                      placeholder="اختر فصيلة الدم"
+                      options={[
+                        "A+",
+                        "A-",
+                        "B+",
+                        "B-",
+                        "AB+",
+                        "AB-",
+                        "O+",
+                        "O-",
+                      ]}
+                    />
+                  </div>
+
+                  <div className="mt-8">
+                    <label className="mb-3 block text-right text-[18px] font-semibold text-[#625F5F]">
+                      ملاحظات
+                    </label>
+                    <textarea
+                      name="notes"
+                      value={addDonorForm.notes}
+                      onChange={handleAddDonorInputChange}
+                      placeholder="أي ملاحظات إضافية عن المتبرع...."
+                      className="min-h-[146px] w-full rounded-[10px] border border-[rgba(129,129,129,0.39)] bg-white px-4 py-4 text-right text-[16px] font-medium text-black outline-none placeholder:text-[rgba(129,129,129,0.72)] focus:border-[#E02323] focus:ring-2 focus:ring-[#E02323]/20"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-8 border-t border-[rgba(129,129,129,0.28)] pt-8">
+                  <div className="flex flex-col gap-4 md:flex-row">
+                    <button
+                      type="submit"
+                      disabled={creatingDonor}
+                      className="flex h-[62px] flex-1 items-center justify-center gap-3 rounded-[15px] border border-[rgba(129,129,129,0.39)] bg-[rgba(208,207,206,0.29)] text-[19px] font-normal text-black transition hover:bg-[rgba(208,207,206,0.4)] disabled:cursor-not-allowed disabled:opacity-70 md:text-[21px]"
+                    >
+                      <Plus size={22} />
+                      {creatingDonor ? "جارٍ التسجيل..." : "تسجيل المتبرع"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={closeAddDonorModal}
+                      disabled={creatingDonor}
+                      className="flex h-[62px] flex-1 items-center justify-center gap-3 rounded-[15px] border border-[rgba(129,129,129,0.39)] bg-[rgba(208,207,206,0.29)] text-[19px] font-normal text-black transition hover:bg-[rgba(208,207,206,0.4)] disabled:cursor-not-allowed disabled:opacity-70 md:text-[21px]"
+                    >
+                      <X size={22} />
+                      إلغاء
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex min-h-[78px] items-center justify-center gap-3 rounded-b-[15px] border-t border-[rgba(129,129,129,0.16)] bg-[rgba(240,240,240,0.12)] px-6 shadow-[inset_0px_4px_4px_rgba(0,0,0,0.06)]">
+                <CalendarDays size={28} className="text-[#818181]" />
+                <span className="text-[18px] font-normal text-[#818181] md:text-[24px]">
+                  {new Date().toLocaleString("ar-EG")}
+                </span>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
@@ -569,6 +903,89 @@ function FilterSelect({
   )
 }
 
+function ModalField({
+  label,
+  name,
+  value,
+  onChange,
+  placeholder,
+  hint,
+  type = "text",
+}: {
+  label: string
+  name: string
+  value: string
+  onChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => void
+  placeholder: string
+  hint?: string
+  type?: string
+}) {
+  return (
+    <div>
+      <label className="mb-3 block text-right text-[18px] font-semibold text-[#625F5F]">
+        {label}
+      </label>
+
+      <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        className="h-[48px] w-full rounded-[10px] border border-[rgba(129,129,129,0.39)] bg-white px-4 text-right text-[16px] font-medium text-black outline-none placeholder:text-[rgba(129,129,129,0.72)] focus:border-[#E02323] focus:ring-2 focus:ring-[#E02323]/20"
+      />
+
+      {hint && (
+        <p className="mt-2 text-right text-[15px] font-normal text-[rgba(30,30,30,0.77)]">
+          {hint}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function ModalSelectField({
+  label,
+  name,
+  value,
+  onChange,
+  placeholder,
+  options,
+}: {
+  label: string
+  name: string
+  value: string
+  onChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => void
+  placeholder: string
+  options: string[]
+}) {
+  return (
+    <div>
+      <label className="mb-3 block text-right text-[18px] font-semibold text-[#625F5F]">
+        {label}
+      </label>
+
+      <select
+        name={name}
+        value={value}
+        onChange={onChange}
+        className="h-[48px] w-full rounded-[10px] border border-[rgba(129,129,129,0.39)] bg-white px-4 text-right text-[16px] font-bold text-black outline-none focus:border-[#E02323] focus:ring-2 focus:ring-[#E02323]/20"
+      >
+        <option value="">{placeholder}</option>
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    </div>
+  )
+}
+
 function DonorRow({
   donor,
   formatLastDonation,
@@ -605,6 +1022,18 @@ function DonorRow({
             <h3 className="text-[17px] font-medium text-black">
               {donor.fullName}
             </h3>
+
+            <span className={`inline-block mt-1 rounded-full px-3 py-[2px] text-[12px] font-medium ${
+  donor.source === "employee"
+    ? "bg-blue-100 text-blue-700"
+    : "bg-green-100 text-green-700"
+}`}>
+  {donor.source === "employee" ? "أضيف بواسطة موظف" : "مسجل ذاتيًا"}
+</span>
+
+
+
+
             <p className="mt-1 text-[15px] text-[#818181]">{donor.nationalId}</p>
             <p className="mt-1 text-[15px] text-[#818181]">{donor.email}</p>
             <p className="mt-2 text-[11px] text-[rgba(129,129,129,0.55)]">
