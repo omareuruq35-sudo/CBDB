@@ -1,15 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
-// fetch("http://localhost:5000/api/emergency-ads")
+//  fetch("http://localhost:5000/api/emergency-ads")
 
 type BloodType = "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-";
 
 type DurationOption = 6 | 12 | 24 | 48 | 72;
 
 type EmergencyAd = {
-  id: number;
+  id: string;
   bloodType: BloodType;
   governorate: string;
   message: string;
@@ -37,44 +37,8 @@ const governorates = [
 
 const durationOptions: DurationOption[] = [6, 12, 24, 48, 72];
 
-const initialAds: EmergencyAd[] = [
-  {
-    id: 1,
-    bloodType: "A+",
-    governorate: "الشرقية",
-    message: "عاجل وقوع حادث نحتاج 8 أكياس دم فصيلة A+",
-    duration: 24,
-    createdAt: "15 ديسمبر 2025، 8:34 م",
-    expiresAt: "16 ديسمبر 2025، 8:34 م",
-  },
-  {
-    id: 2,
-    bloodType: "O+",
-    governorate: "القاهرة",
-    message: "عاجل وقوع حادث نحتاج 2 أكياس دم فصيلة O+",
-    duration: 24,
-    createdAt: "9 ديسمبر 2025، 8:37 م",
-    expiresAt: "10 ديسمبر 2025، 8:37 م",
-  },
-  {
-    id: 3,
-    bloodType: "B+",
-    governorate: "الجيزة",
-    message: "عاجل وقوع حادث نحتاج 5 أكياس دم فصيلة B+",
-    duration: 24,
-    createdAt: "9 ديسمبر 2025، 8:37 م",
-    expiresAt: "10 ديسمبر 2025، 8:37 م",
-  },
-  {
-    id: 4,
-    bloodType: "A-",
-    governorate: "الإسماعيلية",
-    message: "عاجل وقوع حادث نحتاج 5 أكياس دم فصيلة A-",
-    duration: 24,
-    createdAt: "9 ديسمبر 2025، 8:37 م",
-    expiresAt: "10 ديسمبر 2025، 8:37 م",
-  },
-];
+const initialAds: EmergencyAd[] = [];
+
 
 function getNowArabic() {
   return new Date().toLocaleString("ar-EG", {
@@ -109,15 +73,17 @@ function BloodBadge({ type }: { type: BloodType }) {
 
 function AdCard({ ad }: { ad: EmergencyAd }) {
   return (
-<div className="group rounded-[10px] border border-[#D5D5D5] bg-white px-6 py-8 transition-all duration-300 hover:-translate-y-1 hover:border-[#E02323] hover:shadow-md cursor-pointer">      <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <p className="text-sm font-light text-[#444444]">{ad.createdAt}</p>
+<div className="group rounded-[10px] border border-[#D5D5D5] bg-white px-6 py-8 transition-all duration-300 hover:-translate-y-1 hover:border-[#E02323] hover:shadow-md cursor-pointer">      
+<div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+  <div className="flex flex-wrap items-center justify-end gap-2 text-right">
+    <span className="text-lg font-bold text-[#817D7D]">{ad.governorate}</span>
+    <BloodBadge type={ad.bloodType} />
+  </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-2 text-right">
-          <span className="text-lg font-bold text-[#817D7D]">{ad.governorate}</span>
-          <BloodBadge type={ad.bloodType} />
-        </div>
-      </div>
-
+  <p className="text-sm font-light text-[#444444] sm:min-w-fit sm:text-left">
+    {ad.createdAt}
+  </p>
+</div>
       <p className="mb-4 text-right text-lg font-normal text-black">{ad.message}</p>
 
       <p className="text-right text-sm font-medium text-[#444444]">
@@ -137,31 +103,66 @@ export default function EmergencyAdsManagement() {
 
   const adsCount = useMemo(() => ads.length, [ads]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+    
+    
+  const fetchAds = async () => {
+  try {
+    const res = await fetch("http://localhost:5000/api/emergency-ads");
+    const data = await res.json();
+    setAds(data.ads || []);
+  } catch (error) {
+    console.error("Error fetching ads:", error);
+  }
+};
 
-    if (!bloodType || !governorate || !message.trim()) {
-      alert("من فضلك كمّل كل البيانات المطلوبة");
+useEffect(() => {
+      fetchAds();
+    }, []);
+
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  if (!bloodType || !governorate || !message.trim()) {
+    alert("من فضلك كمّل كل البيانات المطلوبة");
+    return;
+  }
+
+  try {
+    const res = await fetch("http://localhost:5000/api/emergency-ads", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        bloodType,
+        governorate,
+        message,
+        duration,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.message || "حصل خطأ أثناء النشر");
       return;
     }
 
-    const newAd: EmergencyAd = {
-      id: Date.now(),
-      bloodType: bloodType as BloodType,
-      governorate,
-      message,
-      duration,
-      createdAt: getNowArabic(),
-      expiresAt: getFutureArabic(duration),
-    };
+    // نجيب الإعلانات من السيرفر بعد الإضافة
+      
+    await fetchAds();
 
-    setAds((prev) => [newAd, ...prev]);
-
+    // نفضي الفورم
     setBloodType("");
     setGovernorate("");
     setMessage("");
     setDuration(24);
-  };
+
+  } catch (error) {
+    console.error(error);
+    alert("حصل خطأ في الاتصال بالسيرفر");
+  }
+};
 
   return (
     <section
@@ -274,9 +275,15 @@ export default function EmergencyAdsManagement() {
               </h3>
 
               <div className="w-full space-y-6">
-                {ads.map((ad) => (
-                  <AdCard key={ad.id} ad={ad} />
-                ))}
+                {ads.length > 0 ? (
+                  ads.map((ad) => <AdCard key={ad.id} ad={ad} />)
+                ) : (
+                  <div className="flex min-h-[220px] items-center justify-center rounded-[10px] border border-dashed border-[#D5D5D5] bg-white/70 px-6 py-10 text-center">
+                    <p className="text-lg font-medium text-[#817D7D]">
+                      لا توجد إعلانات طوارئ حالياً
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
