@@ -69,10 +69,17 @@ export default function SiteDataPage() {
   const [selectedDonors, setSelectedDonors] = useState<string[]>([])
 
   const [showAddDonorModal, setShowAddDonorModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDonationModal, setShowDonationModal] = useState(false)
+  const [currentDonor, setCurrentDonor] = useState<Donor | null>(null)
   const [creatingDonor, setCreatingDonor] = useState(false)
   const [addDonorForm, setAddDonorForm] =
     useState<AddDonorForm>(initialAddDonorForm)
-
+  const [donationDate, setDonationDate] = useState(new Date().toISOString().split('T')[0]);
+  const [donationNotes, setDonationNotes] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState<"donate" | "edit">("donate");
+  const [employeeName, setEmployeeName] = useState("");
   const [filters, setFilters] = useState({
     governorate: "جميع المحافظات",
     bloodType: "جميع الفصائل",
@@ -297,8 +304,41 @@ const isLoggedIn = sessionStorage.getItem("employeeLoggedIn") === "true"
     } finally {
       setCreatingDonor(false)
     }
-  }
+    
+  };
+  const handleDonateSubmit = async () => {
+    if (!currentDonor) return;
 
+    try {
+      setIsSubmitting(true);
+      const res = await fetch(`http://localhost:5000/api/donors/${currentDonor._id}/donate`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          donationDate: donationDate,
+          notes: donationNotes,
+        }),
+      });
+
+      if (res.ok) {
+        alert("تم تسجيل التبرع بنجاح ✅");
+        setShowDonationModal(false);
+        setDonationNotes(""); 
+        window.location.reload(); 
+      } else {
+        const errorData = await res.json();
+        alert(errorData.message || "حدث خطأ أثناء تسجيل التبرع");
+      }
+    } catch (error) {
+      console.error("Donation error:", error);
+      alert("فشل الاتصال بالسيرفر");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+  
   const handleDeleteDonor = async (id: string) => {
     const confirmDelete = window.confirm("هل أنت متأكد أنك تريد حذف هذا المتبرع؟")
     if (!confirmDelete) return
@@ -422,16 +462,16 @@ const isLoggedIn = sessionStorage.getItem("employeeLoggedIn") === "true"
   return (
     <>
       <main className="min-h-screen bg-[#66666]" dir="rtl">
-        <div
-          className={`px-4 pb-10 pt-[120px] md:px-6 ${
-            showAddDonorModal ? "pointer-events-none select-none" : ""
-          }`}
+          <div
+            className={`px-4 pb-10 pt-[120px] md:px-6 ${
+             (showAddDonorModal || showEditModal || showDonationModal) ? "pointer-events-none select-none" : ""
+           }`}
         >
           <div
-            className={`mx-auto max-w-[1300px] space-y-6 transition duration-300 ${
-              showAddDonorModal ? "blur-[4px]" : ""
-            }`}
-          >
+             className={`mx-auto max-w-[1300px] space-y-6 transition duration-300 ${
+              (showAddDonorModal || showEditModal || showDonationModal) ? "blur-[6px]" : ""
+           }`}
+       >
             <section className="rounded-[16px] bg-white p-5 shadow-[0px_10px_30px_rgba(0,0,0,0.12)] transition hover:shadow-[0px_14px_36px_rgba(0,0,0,0.16)]">
               <div className="mb-6 flex items-start gap-4">
                 <div className="flex h-[50px] w-[50px] items-center justify-center rounded-[8px] bg-[rgba(233,168,168,0.62)]">
@@ -606,6 +646,9 @@ const isLoggedIn = sessionStorage.getItem("employeeLoggedIn") === "true"
                       deleting={deletingId === donor._id}
                       checked={selectedDonors.includes(donor._id)}
                       onSelect={handleSelectDonor}
+                      setShowEditModal={setShowEditModal}
+                      setShowDonationModal={setShowDonationModal}
+                      setCurrentDonor={setCurrentDonor}
                     />
                   ))
                 )}
@@ -827,10 +870,132 @@ const isLoggedIn = sessionStorage.getItem("employeeLoggedIn") === "true"
             </form>
           </div>
         </div>
+
+     ) }
+
+     {/* مودال شامل (تبرع + تعديل) - تصميم فيجما */}
+      {(showDonationModal || showEditModal) && currentDonor && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-3 py-6 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="relative w-full max-w-[1000px] max-h-[95vh] overflow-y-auto rounded-[15px] bg-[#FEFEFE] border border-[#E2E2E2] shadow-[0px_3px_30px_rgba(0,0,0,0.09)]" dir="rtl">
+            
+            {/* Header (Frame 78) */}
+            <div className="relative flex min-h-[100px] flex-col items-center justify-center border-b border-[rgba(129,129,129,0.16)] bg-[rgba(240,240,240,0.12)] px-10 py-4 shadow-[0px_4px_4px_rgba(0,0,0,0.05)]">
+              <h2 className="text-[30px] font-semibold text-[#E02323]">إضافة متبرع جديد</h2>
+              <p className="text-[20px] font-medium text-[rgba(129,129,129,0.8)] mt-1">
+                المتبرع : {currentDonor.fullName} | فصيلة الدم : {currentDonor.bloodType}
+              </p>
+              <button 
+                onClick={() => {setShowDonationModal(false); setShowEditModal(false);}} 
+                className="absolute left-6 top-6 flex h-[47px] w-[47px] items-center justify-center rounded-full bg-[rgba(217,217,217,0.46)] hover:bg-gray-300 transition-all"
+              >
+                <X size={29} className="text-[#626262]" />
+              </button>
+            </div>
+
+            {/* أزرار التنقل (Frame 81 & 28) */}
+            <div className="mx-auto mt-6 w-[95%] h-[70px] bg-[rgba(129,129,129,0.07)] border border-[rgba(240,240,240,0.06)] rounded-[10px] flex items-center p-1.5 gap-2">
+                <button 
+                  onClick={() => setActiveTab("edit")}
+                  className={`flex-1 h-full rounded-[10px] text-[24px] font-bold transition-all ${activeTab === "edit" ? "bg-white text-[#E02323] shadow-[0px_4px_4px_rgba(0,0,0,0.06)]" : "text-[rgba(129,129,129,0.81)]"}`}
+                >
+                  تعديل البيانات
+                </button>
+                <button 
+                  onClick={() => setActiveTab("donate")}
+                  className={`flex-1 h-full rounded-[10px] text-[24px] font-bold transition-all ${activeTab === "donate" ? "bg-white text-[#E02323] shadow-[0px_4px_4px_rgba(0,0,0,0.06)]" : "text-[rgba(129,129,129,0.81)]"}`}
+                >
+                  إضافة تبرع
+                </button>
+            </div>
+
+            {/* كروت الإحصائيات (Frame 48096065) */}
+            <div className="mx-auto mt-6 w-[95%] h-[112px] bg-[rgba(226,226,226,0.13)] rounded-[10px] grid grid-cols-4 items-center text-center px-4">
+                <div>
+                   <p className="text-[20px] font-semibold text-[rgba(129,129,129,0.72)]">المحافظة</p>
+                   <p className="text-[24px] font-semibold text-black mt-1">{currentDonor.governorate}</p>
+                </div>
+                <div>
+                   <p className="text-[20px] font-semibold text-[rgba(129,129,129,0.72)]">فصيلة الدم</p>
+                   <p className="text-[32px] font-semibold text-[#E02323] mt-1">{currentDonor.bloodType}</p>
+                </div>
+                <div>
+                   <p className="text-[18px] font-bold text-[rgba(129,129,129,0.72)]">آخر تبرع</p>
+                   <p className="text-[24px] font-semibold text-black mt-1">{currentDonor.lastDonationDate ? new Date(currentDonor.lastDonationDate).toLocaleDateString('ar-EG') : "لا يوجد"}</p>
+                </div>
+                <div>
+                   <p className="text-[20px] font-semibold text-[rgba(129,129,129,0.72)]">عدد التبرعات</p>
+                   <p className="text-[36px] font-semibold text-[#E02323] mt-1">{currentDonor.donationCount || 0}</p>
+                </div>
+            </div>
+                 <div className="p-8 space-y-10">
+              {activeTab === "donate" ? (
+                /* محتوى "إضافة تبرع" */
+                <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
+                  <div className="border border-[rgba(129,129,129,0.18)] rounded-[10px] p-6">
+                    <h3 className="text-right text-[24px] font-bold mb-4">اختر تاريخ التبرع</h3>
+                    <input type="date" value={donationDate} onChange={(e) => setDonationDate(e.target.value)} className="w-full border border-gray-300 p-4 rounded-xl bg-gray-50 outline-none focus:border-[#E02323] text-xl" />
+                  </div>
+                  <div className="border border-[rgba(129,129,129,0.18)] rounded-[10px] p-6 space-y-4">
+                    <h3 className="text-right text-[24px] font-bold">بيانات التبرع الجديد</h3>
+                    <textarea value={donationNotes} onChange={(e) => setDonationNotes(e.target.value)} placeholder="حساسية من البنسلين.. إلخ" className="w-full border border-[rgba(129,129,129,0.3)] p-4 rounded-[10px] h-[115px] outline-none text-lg resize-none" />
+                  </div>
+                </div>
+              ) : (
+                /* محتوى "تعديل البيانات" - نسخة فيجما التفصيلية */
+                <div className="border border-[rgba(129,129,129,0.31)] rounded-[20px] p-8 animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+                   <h3 className="text-right text-[29px] font-semibold text-black mb-6">تعديل بيانات المتبرع</h3>
+                   <div className="grid grid-cols-2 gap-x-12 gap-y-8">
+                      <div className="space-y-2 text-right">
+                         <label className="text-[18px] font-semibold text-[rgba(0,0,0,0.53)] pr-1">الاسم الكامل *</label>
+                         <input type="text" defaultValue={currentDonor.fullName} className="w-full h-[48px] border border-[rgba(129,129,129,0.39)] rounded-[10px] px-4 outline-none focus:border-[#E02323] text-[16px] font-medium" />
+                      </div>
+                      <div className="space-y-2 text-right">
+                         <label className="text-[18px] font-semibold text-[rgba(0,0,0,0.53)] pr-1">رقم الهاتف *</label>
+                         <input type="text" defaultValue={currentDonor.phone} className="w-full h-[48px] border border-[rgba(129,129,129,0.39)] rounded-[10px] px-4 outline-none focus:border-[#E02323] text-[16px] font-medium" />
+                      </div>
+                      <div className="space-y-2 text-right">
+                         <label className="text-[18px] font-semibold text-[rgba(0,0,0,0.53)] pr-1">البريد الإلكتروني</label>
+                         <input type="email" defaultValue={currentDonor.email} className="w-full h-[48px] border border-[rgba(129,129,129,0.39)] rounded-[10px] px-4 outline-none focus:border-[#E02323] text-[16px] font-medium" />
+                      </div>
+                      <div className="space-y-2 text-right">
+                         <label className="text-[18px] font-semibold text-[rgba(0,0,0,0.53)] pr-1">المحافظة *</label>
+                         <select className="w-full h-[48px] border border-[rgba(129,129,129,0.39)] rounded-[10px] px-4 outline-none bg-white text-[16px] font-medium appearance-none">
+                            <option>{currentDonor.governorate}</option>
+                            <option>الشرقية</option>
+                            <option>القاهرة</option>
+                         </select>
+                      </div>
+                   </div>
+                   <div className="space-y-2 text-right pt-4">
+                      <label className="text-[18px] font-semibold text-[rgba(0,0,0,0.53)] pr-1">ملاحظات إضافية</label>
+                      <textarea defaultValue={currentDonor.notes} className="w-full h-[146px] border border-[rgba(129,129,129,0.39)] rounded-[10px] p-4 outline-none focus:border-[#E02323] text-[16px] font-medium resize-none" />
+                   </div>
+                </div>
+              )}
+              {/* أزرار التحكم */}
+              <div className="flex gap-6 pt-6 border-t border-[rgba(129,129,129,0.31)]">
+                <button onClick={handleDonateSubmit} disabled={isSubmitting} className="flex-1 h-[60px] bg-[#E02323] text-white rounded-[11px] text-[24px] font-medium hover:bg-red-700 transition-all disabled:opacity-50">
+                  {isSubmitting ? "جارٍ التسجيل..." : "تسجيل التبرع"}
+                </button>
+                <button onClick={() => {setShowDonationModal(false); setShowEditModal(false);}} className="flex-1 h-[60px] bg-[rgba(91,88,88,0.15)] text-[rgba(0,0,0,0.75)] border border-[rgba(129,129,129,0.07)] rounded-[11px] text-[24px] font-medium hover:bg-gray-300 transition-all">
+                  إلغاء
+                </button>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex h-[77px] items-center justify-center border-t border-[rgba(129,129,129,0.16)] bg-[rgba(240,240,240,0.12)] shadow-[inset_0px_4px_4px_rgba(0,0,0,0.06)]">
+              <p className="text-[20px] text-[#818181] font-normal">
+                جميع العمليات مسجلة للمسائلة • {new Date().toLocaleDateString('ar-EG')} • الموظف : لم يتم تحديده
+              </p>
+            </div>
+          </div>
+        </div>
       )}
     </>
   )
 }
+
 
 function FilterInput({
   label,
@@ -993,6 +1158,9 @@ function DonorRow({
   deleting,
   checked,
   onSelect,
+  setShowEditModal,
+  setShowDonationModal,
+  setCurrentDonor,
 }: {
   donor: Donor
   formatLastDonation: (date?: string | null) => string
@@ -1000,6 +1168,9 @@ function DonorRow({
   deleting: boolean
   checked: boolean
   onSelect: (id: string) => void
+  setShowEditModal: (val: boolean) => void
+  setShowDonationModal: (val: boolean) => void
+  setCurrentDonor: (donor: Donor) => void
 }) {
   return (
     <div className="rounded-[12px] border border-[#ececec] p-4 transition hover:shadow-md">
@@ -1072,19 +1243,25 @@ function DonorRow({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href={`/site-data/edit/${donor._id}`}
+          <button
+        onClick={() => {
+           setCurrentDonor(donor); // بنسجل بيانات المتبرع اللي ضغطنا عليه
+           setShowEditModal(true); // بنفتح مودال التعديل
+           }}
             className="rounded-[10px] border border-[rgba(0,0,0,0.2)] px-3 py-2 text-[15px] text-[#818181] transition hover:bg-[#f8f8f8]"
-          >
+              >
             تعديل
-          </Link>
+          </button>
 
-          <Link
-            href={`/site-data/add-donation/${donor._id}`}
+         <button
+             onClick={() => {
+             setCurrentDonor(donor);
+             setShowDonationModal(true); // بنفتح مودال التبرع
+            }}
             className="rounded-[10px] bg-[#E02323] px-3 py-2 text-[15px] text-white transition hover:opacity-90"
-          >
+              >
             تبرع
-          </Link>
+          </button>
 
           <button
             onClick={() => onDelete(donor._id)}
