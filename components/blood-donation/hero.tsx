@@ -36,21 +36,16 @@ export function Hero() {
         <div className="w-full max-w-[500px] text-right">
           <h1 className="text-[30px] md:text-[40px] lg:text-[48px] leading-[1.5] tracking-[0.15px] text-black">
 
-            <span className="font-[700] block">
-              منصة مركزية لتنظيم
+            {/* السطر الأول */}
+            <span className="font-[700] block whitespace-nowrap">
+              منصة مركزية لتنظيم وإدارة
             </span>
-
-            <span className="block">
-              <span className="font-[700]">وإدارة</span>
-              <span className="font-light"> التبرع بالدم</span>
+            {/* السطر التاني */}
+            <span className="block font-light text-center whitespace-nowrap">
+              التبرع بالدم وفقًا للمعايير  
             </span>
-
-            <span className="font-light block">
-              وفقًا للمعايير الصحية
-            </span>
-
-            <span className="font-light block">
-              المعتمدة
+            <span className="font-light block text-center">
+              الصحيةالمعتمدة 
             </span>
 
           </h1>
