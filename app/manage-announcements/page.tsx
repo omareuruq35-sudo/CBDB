@@ -40,7 +40,7 @@ const initialAds: EmergencyAd[] = [];
 
 
 function getNowArabic() {
-  return new Date().toLocaleString("ar-EG", {
+  return new Date().toLocaleString("en-GB", {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -52,7 +52,7 @@ function getNowArabic() {
 
 function getFutureArabic(hours: number) {
   const future = new Date(Date.now() + hours * 60 * 60 * 1000);
-  return future.toLocaleString("ar-EG", {
+  return future.toLocaleString("en-GB", {
     day: "numeric",
     month: "long",
     year: "numeric",

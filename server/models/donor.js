@@ -52,6 +52,69 @@ const donorSchema = new mongoose.Schema(
       enum: ["user", "employee"],
       default: "user",
     },
+    donations: {
+      type: [
+        {
+          donationDate: {
+            type: Date,
+            required: true,
+          },
+          notes: {
+            type: String,
+            default: "",
+            trim: true,
+          },
+          employeeName: {
+            type: String,
+            default: "",
+            trim: true,
+          },
+        },
+      ],
+      default: [],
+    },
+    updateHistory: {
+      type: [
+        {
+          updatedAt: {
+            type: Date,
+            default: Date.now,
+          },
+          employeeName: {
+            type: String,
+            default: "",
+            trim: true,
+          },
+          fullName: {
+            type: String,
+            default: "",
+            trim: true,
+          },
+          email: {
+            type: String,
+            default: "",
+            trim: true,
+            lowercase: true,
+          },
+          phone: {
+            type: String,
+            default: "",
+            trim: true,
+          },
+          governorate: {
+            type: String,
+            default: "",
+            trim: true,
+          },
+          notes: {
+            type: String,
+            default: "",
+            trim: true,
+          },
+        },
+      ],
+      default: [],
+    },
   },
   { timestamps: true }
 );

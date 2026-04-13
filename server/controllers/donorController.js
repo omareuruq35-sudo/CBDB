@@ -57,13 +57,15 @@ const createDonor = async (req, res) => {
       lastDonationDate: lastDonationDate || null,
       notes: notes || "",
       source: source === "employee" ? "employee" : "user",
+      donations: [],
+      updateHistory: [],
     });
 
     try {
       await sendEmail({
         to: donor.email,
         subject: "تم تسجيلك بنجاح في البنك المركزي المصري للتبرع بالدم",
-html: `
+        html: `
   <div style="margin:0; padding:0; background-color:#f6f6f6; direction:rtl; font-family:Arial, Helvetica, sans-serif;">
     <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f6f6f6; padding:30px 0;">
       <tr>
@@ -150,7 +152,7 @@ html: `
       </tr>
     </table>
   </div>
-`
+`,
       });
     } catch (emailError) {
       console.error("Email sending error:", emailError);
@@ -210,11 +212,12 @@ const deleteDonor = async (req, res) => {
     });
   }
 };
+
 // تسجيل عملية تبرع جديدة وتحديث بيانات المتبرع
 const registerDonation = async (req, res) => {
   try {
     const { id } = req.params;
-    const { donationDate, notes } = req.body;
+    const { donationDate, notes, employeeName } = req.body;
 
     const donor = await Donor.findById(id);
 
@@ -222,14 +225,128 @@ const registerDonation = async (req, res) => {
       return res.status(404).json({ message: "المتبرع غير موجود" });
     }
 
-    // تحديث البيانات
-    donor.donationCount = (donor.donationCount || 0) + 1;
+    if (!donationDate) {
+      return res.status(400).json({
+        message: "يجب اختيار تاريخ التبرع",
+      });
+    }
+
+    if (!employeeName || !employeeName.trim()) {
+      return res.status(400).json({
+        message: "يجب إدخال اسم الموظف المسؤول",
+      });
+    }
+
+    donor.donations.push({
+      donationDate,
+      notes: notes || "",
+      employeeName: employeeName.trim(),
+    });
+
+    donor.donationCount = donor.donations.length;
     donor.lastDonationDate = donationDate;
+
     if (notes) {
       donor.notes = notes;
     }
 
     await donor.save();
+
+    try {
+      if (donor.email) {
+        await sendEmail({
+          to: donor.email,
+          subject: "تم تسجيل تبرعك بنجاح",
+          html: `
+            <div style="margin:0; padding:0; background-color:#f6f6f6; direction:rtl; font-family:Arial, Helvetica, sans-serif;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f6f6f6; padding:30px 0;">
+                <tr>
+                  <td align="center">
+                    <table width="650" cellpadding="0" cellspacing="0" style="max-width:650px; width:100%; background-color:#ffffff; border-radius:18px; overflow:hidden; box-shadow:0 8px 30px rgba(0,0,0,0.08);">
+                      
+                      <tr>
+                        <td style="background:linear-gradient(135deg, #b71c1c, #d32f2f); padding:30px 25px; text-align:center;">
+                          <h1 style="margin:0; color:#ffffff; font-size:28px; font-weight:bold;">
+                            البنك المركزي المصري للتبرع بالدم
+                          </h1>
+                          <p style="margin:10px 0 0; color:#ffeaea; font-size:15px;">
+                            Central Blood Donation Bank
+                          </p>
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td style="padding:35px 30px 20px; text-align:right; color:#222;">
+                          <h2 style="margin:0 0 15px; color:#c62828; font-size:24px;">
+                            شكرًا لك ${donor.fullName} ❤️
+                          </h2>
+
+                          <p style="margin:0 0 14px; font-size:16px; line-height:1.9;">
+                            تم تسجيل عملية التبرع الخاصة بك بنجاح في نظام البنك المركزي المصري للتبرع بالدم.
+                          </p>
+
+                          <div style="background-color:#fff5f5; border:1px solid #f3c7c7; border-radius:14px; padding:18px 20px; margin:25px 0;">
+                            <h3 style="margin:0 0 12px; color:#b71c1c; font-size:18px;">
+                              تفاصيل عملية التبرع
+                            </h3>
+
+                            <p style="margin:8px 0; font-size:15px;">
+                              <strong>الاسم:</strong> ${donor.fullName}
+                            </p>
+
+                            <p style="margin:8px 0; font-size:15px;">
+                              <strong>تاريخ التبرع:</strong> ${new Date(donationDate).toLocaleDateString("ar-EG")}
+                            </p>
+
+                            <p style="margin:8px 0; font-size:15px;">
+                              <strong>عدد مرات التبرع:</strong> ${donor.donationCount}
+                            </p>
+
+                            <p style="margin:8px 0; font-size:15px;">
+                              <strong>تم التسجيل بواسطة:</strong> ${employeeName}
+                            </p>
+
+                            ${
+                              notes
+                                ? `<p style="margin:8px 0; font-size:15px;">
+                                     <strong>ملاحظات:</strong> ${notes}
+                                   </p>`
+                                : ""
+                            }
+                          </div>
+
+                          <p style="margin:0 0 20px; font-size:16px; line-height:1.9;">
+                            نشكرك على مساهمتك الإنسانية، فكل تبرع بالدم قد ينقذ حياة إنسان.
+                          </p>
+
+                          <div style="text-align:center; margin:30px 0 10px;">
+                            <a href="http://localhost:3000"
+                               style="display:inline-block; background-color:#c62828; color:#ffffff; text-decoration:none; padding:14px 28px; border-radius:10px; font-size:15px; font-weight:bold;">
+                              زيارة الموقع
+                            </a>
+                          </div>
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td style="background-color:#fafafa; padding:18px 20px; text-align:center; border-top:1px solid #eeeeee;">
+                          <p style="margin:0; font-size:13px; color:#888;">
+                            © Central Blood Donation Bank - جميع الحقوق محفوظة
+                          </p>
+                        </td>
+                      </tr>
+
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </div>
+          `,
+        });
+      }
+    } catch (emailError) {
+      console.error("Donation email sending error:", emailError);
+    }
 
     return res.status(200).json({
       message: "تم تسجيل عملية التبرع بنجاح ✅",
@@ -243,9 +360,94 @@ const registerDonation = async (req, res) => {
     });
   }
 };
+
+// تعديل بيانات المتبرع
+const updateDonor = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      fullName,
+      email,
+      phone,
+      governorate,
+      notes,
+      employeeName,
+    } = req.body;
+
+    const donor = await Donor.findById(id);
+
+    if (!donor) {
+      return res.status(404).json({
+        message: "المتبرع غير موجود",
+      });
+    }
+
+    if (!fullName || !phone || !governorate) {
+      return res.status(400).json({
+        message: "الاسم ورقم الهاتف والمحافظة حقول مطلوبة",
+      });
+    }
+
+    if (!/^01[0125]\d{8}$/.test(phone)) {
+      return res.status(400).json({
+        message: "رقم الهاتف غير صحيح",
+      });
+    }
+
+    if (!employeeName || !employeeName.trim()) {
+      return res.status(400).json({
+        message: "يجب إدخال اسم الموظف المسؤول",
+      });
+    }
+
+    if (email && email !== donor.email) {
+      const existingEmail = await Donor.findOne({
+        email,
+        _id: { $ne: id },
+      });
+
+      if (existingEmail) {
+        return res.status(400).json({
+          message: "هذا البريد الإلكتروني مستخدم بالفعل",
+        });
+      }
+    }
+
+    donor.fullName = fullName;
+    donor.email = email || "";
+    donor.phone = phone;
+    donor.governorate = governorate;
+    donor.notes = notes || "";
+
+    donor.updateHistory.push({
+      updatedAt: new Date(),
+      employeeName: employeeName.trim(),
+      fullName,
+      email: email || "",
+      phone,
+      governorate,
+      notes: notes || "",
+    });
+
+    await donor.save();
+
+    return res.status(200).json({
+      message: "تم تحديث بيانات المتبرع بنجاح ✅",
+      donor,
+    });
+  } catch (error) {
+    console.error("Update donor error:", error);
+    return res.status(500).json({
+      message: "حدث خطأ أثناء التعديل",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   createDonor,
   getAllDonors,
   deleteDonor,
-  registerDonation, // تأكدي من إضافة هذه الكلمة
+  registerDonation,
+  updateDonor,
 };

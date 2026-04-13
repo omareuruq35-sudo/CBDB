@@ -2,7 +2,7 @@ const EmergencyAd = require("../models/EmergencyAd");
 
 // دالة تنسيق التاريخ بالعربي المصري
 const formatArabicDate = (date) => {
-  return new Date(date).toLocaleString("ar-EG", {
+  return new Date(date).toLocaleString("en-GB", {
     day: "numeric",
     month: "long",
     year: "numeric",

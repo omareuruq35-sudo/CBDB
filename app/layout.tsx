@@ -27,6 +27,10 @@ export const metadata: Metadata = {
   title: 'البنك المركزي المصري للتبرع بالدم',
   description: 'منصة مركزية لتنظيم وإدارة التبرع بالدم وفقاً للمعايير الصحية المعتمدة',
   
+  icons: {
+  icon: "/favicon.png",
+}
+  
 }
 
 export default function RootLayout({
