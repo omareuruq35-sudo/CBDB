@@ -210,9 +210,42 @@ const deleteDonor = async (req, res) => {
     });
   }
 };
+// تسجيل عملية تبرع جديدة وتحديث بيانات المتبرع
+const registerDonation = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { donationDate, notes } = req.body;
 
+    const donor = await Donor.findById(id);
+
+    if (!donor) {
+      return res.status(404).json({ message: "المتبرع غير موجود" });
+    }
+
+    // تحديث البيانات
+    donor.donationCount = (donor.donationCount || 0) + 1;
+    donor.lastDonationDate = donationDate;
+    if (notes) {
+      donor.notes = notes;
+    }
+
+    await donor.save();
+
+    return res.status(200).json({
+      message: "تم تسجيل عملية التبرع بنجاح ✅",
+      donor,
+    });
+  } catch (error) {
+    console.error("Register donation error:", error);
+    return res.status(500).json({
+      message: "حدث خطأ أثناء تسجيل عملية التبرع",
+      error: error.message,
+    });
+  }
+};
 module.exports = {
   createDonor,
   getAllDonors,
   deleteDonor,
+  registerDonation, // تأكدي من إضافة هذه الكلمة
 };
