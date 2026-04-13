@@ -1,4 +1,5 @@
 const Donor = require("../models/Donor");
+const sendEmail = require("../utils/sendEmail");
 
 // إضافة متبرع جديد
 const createDonor = async (req, res) => {
@@ -57,6 +58,103 @@ const createDonor = async (req, res) => {
       notes: notes || "",
       source: source === "employee" ? "employee" : "user",
     });
+
+    try {
+      await sendEmail({
+        to: donor.email,
+        subject: "تم تسجيلك بنجاح في البنك المركزي المصري للتبرع بالدم",
+html: `
+  <div style="margin:0; padding:0; background-color:#f6f6f6; direction:rtl; font-family:Arial, Helvetica, sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f6f6f6; padding:30px 0;">
+      <tr>
+        <td align="center">
+          <table width="650" cellpadding="0" cellspacing="0" style="max-width:650px; width:100%; background-color:#ffffff; border-radius:18px; overflow:hidden; box-shadow:0 8px 30px rgba(0,0,0,0.08);">
+            
+            <tr>
+              <td style="background:linear-gradient(135deg, #b71c1c, #d32f2f); padding:30px 25px; text-align:center;">
+                <h1 style="margin:0; color:#ffffff; font-size:28px; font-weight:bold;">
+                  البنك المركزي المصري للتبرع بالدم
+                </h1>
+                <p style="margin:10px 0 0; color:#ffeaea; font-size:15px;">
+                  Central Blood Donation Bank
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:35px 30px 20px; text-align:right; color:#222;">
+                <h2 style="margin:0 0 15px; color:#c62828; font-size:24px;">
+                  مرحبًا ${donor.fullName} 👋
+                </h2>
+
+                <p style="margin:0 0 14px; font-size:16px; line-height:1.9;">
+                  تم تسجيل بياناتك بنجاح في
+                  <span style="font-weight:bold; color:#b71c1c;">
+                    البنك المركزي المصري للتبرع بالدم
+                  </span>.
+                </p>
+
+                <p style="margin:0 0 14px; font-size:16px; line-height:1.9;">
+                  نشكرك على رغبتك في المساهمة بالتبرع بالدم، فكل قطرة دم يمكن أن تنقذ حياة إنسان.
+                </p>
+
+                <p style="margin:0 0 20px; font-size:16px; line-height:1.9;">
+                  تم حفظ بياناتك لدينا بنجاح، وقد يتم التواصل معك عند الحاجة وفقًا لفصيلة الدم والمحافظة الخاصة بك.
+                </p>
+
+                <div style="background-color:#fff5f5; border:1px solid #f3c7c7; border-radius:14px; padding:18px 20px; margin:25px 0;">
+                  <h3 style="margin:0 0 12px; color:#b71c1c; font-size:18px;">
+                    بياناتك المسجلة
+                  </h3>
+
+                  <p style="margin:8px 0; font-size:15px;">
+                    <strong>الاسم:</strong> ${donor.fullName}
+                  </p>
+
+                  <p style="margin:8px 0; font-size:15px;">
+                    <strong>البريد الإلكتروني:</strong> ${donor.email}
+                  </p>
+
+                  <p style="margin:8px 0; font-size:15px;">
+                    <strong>فصيلة الدم:</strong> ${donor.bloodType}
+                  </p>
+
+                  <p style="margin:8px 0; font-size:15px;">
+                    <strong>المحافظة:</strong> ${donor.governorate}
+                  </p>
+                </div>
+
+                <div style="text-align:center; margin:30px 0 10px;">
+                  <a href="http://localhost:3000"
+                     style="display:inline-block; background-color:#c62828; color:#ffffff; text-decoration:none; padding:14px 28px; border-radius:10px; font-size:15px; font-weight:bold;">
+                    زيارة الموقع
+                  </a>
+                </div>
+
+                <p style="margin:25px 0 0; font-size:14px; color:#666; line-height:1.8;">
+                  هذه رسالة تلقائية لتأكيد التسجيل، برجاء عدم الرد عليها.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="background-color:#fafafa; padding:18px 20px; text-align:center; border-top:1px solid #eeeeee;">
+                <p style="margin:0; font-size:13px; color:#888;">
+                  © Central Blood Donation Bank - جميع الحقوق محفوظة
+                </p>
+              </td>
+            </tr>
+
+          </table>
+        </td>
+      </tr>
+    </table>
+  </div>
+`
+      });
+    } catch (emailError) {
+      console.error("Email sending error:", emailError);
+    }
 
     return res.status(201).json({
       message: "تم تسجيل المتبرع بنجاح",

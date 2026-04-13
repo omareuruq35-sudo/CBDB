@@ -104,11 +104,18 @@ export default function RegisterPage() {
             أنقذ حياة.. تبرع بالدم
           </h1>
 
-          <p className="text-[18px] font-medium text-[#444444] md:text-[20px]">
-            كل قطرة دم تتبرع بها يمكن أن تنقذ حياة إنسان. انضم إلى قاعدة
-            المتبرعين وكن سبباً في إنقاذ الأرواح
-          </p>
-        </div>
+          <p className="text-[18px] font-medium text-[#444444] md:text-[20px] text-center">
+            
+            <span className="block">
+              كل قطرة دم تتبرع بها يمكن أن تنقذ حياة إنسان 
+            </span>
+
+            <span className="block mt-2">
+              انضم إلى قاعدة المتبرعين وكن سببًا في إنقاذ الأرواح
+            </span>
+
+          </p>       
+     </div>
 
         {/* الكارد */}
         <section

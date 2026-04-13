@@ -221,7 +221,7 @@ useEffect(() => {
           </h1>
 
           <p className="mt-4 font-['Arimo'] text-[16px] text-[#444444] md:text-[20px]">
-            هذه الإعلانات تظهر للجميع بدون تسجيل دخول ساهم في إنقاذ الأرواح
+            هذه الإعلانات تظهر للجميع بدون تسجيل ساهم في إنقاذ الأرواح
           </p>
 
           <div className="mt-6 flex items-center justify-center gap-2">
