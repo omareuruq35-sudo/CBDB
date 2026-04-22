@@ -1,9 +1,10 @@
-import type { Metadata } from 'next'
+import ChatbotWrapper from "@/components/ChatbotWrapper";
 import { Cairo, Roboto, Arimo } from 'next/font/google' // 1. ضيفنا Arimo هنا
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 import { Navbar } from "@/components/blood-donation/navbar" 
 import { Footer } from "@/components/blood-donation/footer"
+
 
 const cairo = Cairo({ 
   subsets: ["arabic", "latin"],
@@ -37,7 +38,8 @@ export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
-}>) {
+}>)
+ {
   return (
     <html lang="ar" dir="rtl">
       {/* 3. ضفنا arimo.variable هنا في الـ body */}
@@ -49,7 +51,7 @@ export default function RootLayout({
        
         <Footer />
         <Analytics />
-        
+      <ChatbotWrapper />
       </body>
     </html>
   )
