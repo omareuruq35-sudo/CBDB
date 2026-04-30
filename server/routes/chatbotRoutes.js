@@ -1,29 +1,30 @@
 const EmergencyAd = require("../models/EmergencyAd");
+const Fuse = require("fuse.js");
 const express = require("express");
 const router = express.Router();
 const bloodBanks = {
-    "الإسكندرية": {
-      aliases: ["اسكندرية", "الاسكندرية", "الاسكندريه","اسكندريه","alex"],
-      address: "154 شارع السوق (باكوس)",
-      phones: ["0123456789", "0123456789"]
+  "الإسكندرية": {
+    aliases: ["اسكندرية", "الاسكندرية", "الاسكندريه", "اسكندريه", "alex"],
+    address: "154 شارع السوق (باكوس)",
+    phones: ["0123456789", "0123456789"]
   },
   "الإسماعيلية": {
-   aliases: ["اسماعلية", "الاسماعلية","الاسماعليه","اسماعليه", "ismaillia"],
+    aliases: ["اسماعلية", "الاسماعلية", "الاسماعليه", "اسماعليه", "ismaillia"],
     address: "ميدان المطافي",
     phones: ["0123456789", "0123456789"]
   },
   "القاهرة": {
-    aliases: ["قاهرة", "القاهره", "قاهره", "القاهرة","cairo"],
+    aliases: ["قاهرة", "القاهره", "قاهره", "القاهرة", "cairo"],
     address: "فاقوس - محطة العزازي",
     phones: ["0123456789", "0123456789"]
   },
   "المنوفية": {
-    aliases: ["المنوفية", "المنوفيه", "منوفية", "منوفية","menoufia"],
+    aliases: ["المنوفية", "المنوفيه", "منوفية", "منوفية", "menoufia"],
     address: "شبين الكوم - شارع جمال عبد الناصر",
     phones: ["0123456789", "0123456789"]
   },
   "الغربية": {
-    aliases: ["الغربية", "الغربيه", "غربيه", "فربيه","gharbia"],
+    aliases: ["الغربية", "الغربيه", "غربيه", "فربيه", "gharbia"],
     address: "المجمع الطبي (شارع البحر)",
     phones: ["0123456789", "0123456789"]
   }
@@ -55,54 +56,41 @@ const faq = [
   {
     intent: "eligibility",
     questions: [
-      "مين يقدر يتبرع بالدم",
-      "ينفع اتبرع",
-      "هل اقدر اتبرع",
-      "شروط التبرع ايه",
-      "انا 25 سنة ينفع اتبرع",
-      "هل اي حد يقدر يتبرع",
+      "شروط التبرع",
+      "شروط التبرع بالدم",
+      "مين يقدر يتبرع",
       "مين مسموح له يتبرع",
-      "ايه شروط التبرع بالدم",
-      "مين ينفع يتبرع بالدم",
-      "هل انا مناسب للتبرع",
-      "هل حالتي تسمح بالتبرع",
-      "هل ينفع اتبرع بالدم دلوقتي",
-      "ايه شروط اني اتبرع بالدم",
-      "عايز اعرف هل اقدر اتبرع",
-      "ازاي اعرف اني اقدر اتبرع",
-      "هل في شروط معينة للتبرع",
-      "مين اللي ينفع يتبرع ومين لا",
-      "هل التبرع بالدم ليه شروط",
-      "ايه المتطلبات للتبرع بالدم",
-      "هل في سن معين للتبرع",
-      "هل الوزن بيأثر على التبرع",
-      "هل اي حد سليم يقدر يتبرع",
-      "لو انا سليم ينفع اتبرع",
-      "هل لازم اكون بصحة كويسة عشان اتبرع",
-      "هل في ناس مينفعش تتبرع",
-      "امتى اقدر اتبرع بالدم",
-      "هل اقدر اتبرع لو معنديش امراض",
-      "هل في شروط صحية للتبرع"
+      "المتطلبات للتبرع",
+      "ايه شروط التبرع",
+      "السن المسموح للتبرع",
+      "الوزن المطلوب للتبرع",
+      "هل في شروط للتبرع",
+      "مين ينفع يتبرع",
+      "المعايير للتبرع",
+      "الحد الأدنى للتبرع",
+      "هل اي حد يقدر يتبرع",
+      "المؤهلات للتبرع بالدم",
+      "شروط التبرع الصحية"
     ],
     answer: "أي شخص سليم بين 18 و60 سنة ووزنه فوق 50 كجم يقدر يتبرع، بشرط مفيش أمراض مزمنة خطيرة."
   },
 
   {
-  intent: "locations",
-  questions: [
-    "أماكن بنوك الدم",
-    "فين بنوك الدم",
-    "اقرب بنك دم",
-    "اماكن التبرع بالدم",
-    "عايز مكان اتبرع فيه",
-    "فين اقدر اتبرع بالدم",
-    "بنوك الدم في المحافظات",
-    "عناوين بنوك الدم",
-    "ارقام بنوك الدم",
-    "فين اقرب مكان للتبرع",
-    "اي المكان اللي ممكن اتبرع فيه"
-  ],
-  answer: `الإسكندرية
+    intent: "locations",
+    questions: [
+      "أماكن بنوك الدم",
+      "فين بنوك الدم",
+      "اقرب بنك دم",
+      "اماكن التبرع بالدم",
+      "عايز مكان اتبرع فيه",
+      "فين اقدر اتبرع بالدم",
+      "بنوك الدم في المحافظات",
+      "عناوين بنوك الدم",
+      "ارقام بنوك الدم",
+      "فين اقرب مكان للتبرع",
+      "اي المكان اللي ممكن اتبرع فيه"
+    ],
+    answer: `الإسكندرية
 العنوان:
 154 شارع السوق (باكوس)
 التليفون:
@@ -136,9 +124,9 @@ const faq = [
 التليفون:
 0123456789
 0123456789`
-},
+  },
 
-  // ⛔ Rejection
+  //  Rejection
   {
     intent: "rejection",
     questions: [
@@ -209,7 +197,7 @@ const faq = [
 📝 لكن كل الإجراءات (تسجيل + كشف) ممكن توصل لـ 30 دقيقة`
   },
 
-  // 🍎 Before and after donation
+  //  Before and after donation
   {
     intent: "before and After_donation",
     questions: [
@@ -243,7 +231,7 @@ const faq = [
       "ارشادات قبل وبعد التبرع اي هيا ",
 
       "هل لازم اكل قبل التبرع",
-       "قبل التبرع هل لازم اكل",
+      "قبل التبرع هل لازم اكل",
 
       "هل لازم اكل قبل التبرع بالدم ",
       "قبل التبرع بالدم هل لازم اكل",
@@ -256,17 +244,17 @@ const faq = [
 
       "نصايح قبل التبرع",
       "نصايح لقبل التبرع",
-       "نصايح قبل التبرع بالدم",
-       "نصايح لقبل التبرع بالدم",
+      "نصايح قبل التبرع بالدم",
+      "نصايح لقبل التبرع بالدم",
 
       "نصايح بعد التبرع بالدم",
       "نصايح لبعد التبرع بالدم",
       "نصايح بعد التبرع",
       "نصايح لبعد التبرع",
 
-     
+
       "تحضير قبل التبرع",
-      
+
       "اشرب ايه قبل ما اتبرع",
       " قبل ما اتبرع اشرب اي ",
       "اشرب ايه قبل التبرع",
@@ -320,18 +308,18 @@ const faq = [
 
 
     ],
-    answer:[
-             "- نام كويس قبل التبرع .",
-             "- كل وجبة خفيفه قبل التبرع وابعد عن الدهون.",
-             "- اشرب مياه كتير قبل وبعد التبرع.",
-             "- بلاش تدخين قبل وبعد التبرع بساعتين.",
-             "- البس هدوم مريحة وانت رايح تتبرع.",
-             "- قول للطبيب على أي أدوية أو مشاكل صحية قبل التبرع.",
-             "- ارتاح بعد التبرع 10-15 دقيقة.",
-             "- تجنب المجهود الشديد بعد التبرع لمدة 24 ساعة.",
-             " - لو حسيت بدوخة اقعد وارفع رجلك."
-            ]
-},
+    answer: [
+      "- نام كويس قبل التبرع .",
+      "- كل وجبة خفيفه قبل التبرع وابعد عن الدهون.",
+      "- اشرب مياه كتير قبل وبعد التبرع.",
+      "- بلاش تدخين قبل وبعد التبرع بساعتين.",
+      "- البس هدوم مريحة وانت رايح تتبرع.",
+      "- قول للطبيب على أي أدوية أو مشاكل صحية قبل التبرع.",
+      "- ارتاح بعد التبرع 10-15 دقيقة.",
+      "- تجنب المجهود الشديد بعد التبرع لمدة 24 ساعة.",
+      " - لو حسيت بدوخة اقعد وارفع رجلك."
+    ]
+  },
 
   // 🩺 Benefits
   {
@@ -359,13 +347,14 @@ const faq = [
       "هل التبرع بيخلي الجسم احسن",
       "ايه اهمية التبرع بالدم"
     ],
-      answer: [
-        "- يساعد في إنقاذ حياة المرضى.",
-        "- يجدد خلايا الدم في الجسم.",
-        "- بيوفر فحص صحي شامل.",
-        "- يدعم مخزون الدم للحالات الطارئة.",
-        "-  يقلل من خطر الاصابة بامراض القلب."
-]  },
+    answer: [
+      "- يساعد في إنقاذ حياة المرضى.",
+      "- يجدد خلايا الدم في الجسم.",
+      "- بيوفر فحص صحي شامل.",
+      "- يدعم مخزون الدم للحالات الطارئة.",
+      "-  يقلل من خطر الاصابة بامراض القلب."
+    ]
+  },
 
   // ⚠️ Risks
   {
@@ -388,7 +377,7 @@ const faq = [
       "هل التبرع آمن ولا لا",
       "هل في مشاكل بعد التبرع",
       "هل التبرع بيخليني اعيى",
-      "هل في آثار سلبية للتبرع",     
+      "هل في آثار سلبية للتبرع",
       "هل التبرع بالدم خطر",
       "فيه ضرر من التبرع بالدم",
       "هل التبرع بالدم بيأثر على الصحة",
@@ -410,14 +399,15 @@ const faq = [
       "هل في آثار سلبية للتبرع بالدم"
     ],
 
-    answer: "التبرع بالدم آمن جدًا 👍\n" + 
-    [
+    answer: [
+      "التبرع بالدم آمن جدًا 👍",
       "ممكن يحصل دوخة بسيطة",
-      "التعب مؤقت وبيختفي بسرعة",
+      "التعب مؤقت",
       "الجسم بيعوض الدم خلال أيام"
-]  },
+    ]
+  },
 
-  // 🧬 Blood types
+  //  Blood types
   {
     intent: "blood_types",
     questions: [
@@ -442,14 +432,15 @@ const faq = [
       "ايه اهمية فصيلة الدم",
       "هل الفصائل بتفرق في التبرع"
     ],
-answer: [
-  "- الفصائل الأساسية  : A - B - AB - O.",
-  "- كل فصيلة ليها موجب (+) أو سالب (-).",
-  "- الفصائل بتحدد مين يقدر يتبرع لمين.",
-  "- O-يعتبر متبرع عام لمعظم الفصائل."
-]  },
+    answer: [
+      "- الفصائل الأساسية  : A - B - AB - O.",
+      "- كل فصيلة ليها موجب (+) أو سالب (-).",
+      "- الفصائل بتحدد مين يقدر يتبرع لمين.",
+      "- O-يعتبر متبرع عام لمعظم الفصائل."
+    ]
+  },
 
-  // 🤰 Pregnancy
+  //  Pregnancy
   {
     intent: "pregnancy",
     questions: [
@@ -471,16 +462,18 @@ answer: [
       "هل في شروط للتبرع بعد الحمل",
       "هل ينفع اتبرع بعد القيصرية",
       "هل التبرع بالدم يضر الطفل",
-      "هل التبرع بالدم يقلل اللبن"
+      "هل التبرع بالدم يقلل اللبن",
+      "انا حامل ينفع اتبرع ؟"
     ],
     answer: [
       "- لا يُنصح بالتبرع بالدم أثناء الحمل.",
       "- الرضاعة بتأجل التبرع مؤقتًا.",
       "- الافضل الانتظار بعد الولادة بفترة.",
       "- يفضل استشارة طبيب قبل التبرع."
-    ]  },
+    ]
+  },
 
-  // 🍽 Food
+  //  Food
   {
     intent: "food",
     questions: [
@@ -504,300 +497,285 @@ answer: [
       "هل القهوة تأثر على التبرع",
       "ايه الاكل المناسب قبل التبرع"
     ],
-answer: [
-  "- يفضل تاكل وجبة خفيفة قبل التبرع.",
-  "- اشرب سوائل كتير خصوصًا المياه.",
-  "- تجنب الأكل الدسم أو الثقيل.",
-  "- متروحش تتبرع وانت صايم."
-]  },
-  
+    answer: [
+      "- يفضل تاكل وجبة خفيفة قبل التبرع.",
+      "- اشرب سوائل كتير خصوصًا المياه.",
+      "- تجنب الأكل الدسم أو الثقيل.",
+      "- متروحش تتبرع وانت صايم."
+    ]
+  },
+
   //Emergency
   {
-  intent: "emergency",
-  questions: [
-    "فيه حد محتاج دم",
-    "في حالات طوارئ",
-    "في طلب دم",
-    "ايه الحالات الحالية",
-    "هل في حد محتاج تبرع بالدم",
-    "في حالات محتاجة دم دلوقتي",
-    "في حد طالب دم",
-    "هل في طلبات دم حالياً",
-    "ايه اخر حالات الطوارئ",
-    "هل في ناس محتاجة دم دلوقتي",
-    "في حالة طارئة محتاجة دم",
-    "هل في اعلان محتاج دم",
-    "في حد محتاج فصيلة معينة",
-    "ايه الحالات اللي محتاجة تبرع",
-    "في حالات حرجة محتاجة دم",
-    "هل في ناس طالبة دم حالياً",
-    "في محتاجين دم دلوقتي",
-    "ايه اخر طلبات التبرع بالدم",
-    "في حالات مستعجلة للدم"
+    intent: "emergency",
+    questions: [
+      "فيه حد محتاج دم",
+      "في حالات طوارئ",
+      "في طلب دم",
+      "ايه الحالات الحالية",
+      "هل في حد محتاج تبرع بالدم",
+      "في حالات محتاجة دم دلوقتي",
+      "في حد طالب دم",
+      "هل في طلبات دم حالياً",
+      "ايه اخر حالات الطوارئ",
+      "هل في ناس محتاجة دم دلوقتي",
+      "في حالة طارئة محتاجة دم",
+      "هل في اعلان محتاج دم",
+      "في حد محتاج فصيلة معينة",
+      "ايه الحالات اللي محتاجة تبرع",
+      "في حالات حرجة محتاجة دم",
+      "هل في ناس طالبة دم حالياً",
+      "في محتاجين دم دلوقتي",
+      "ايه اخر طلبات التبرع بالدم",
+      "في حالات مستعجلة للدم",
+      "فيه حالات طوارئ؟"
     ]
-},
+  },
 
-{
-  intent: "become_donor",
+  {
+  intent: "donation_process",
   questions: [
-    "عايز اتبرع اعمل اي",
-    "ازاي اتبرع ",
-    "ازاي اتبرع بالدم",
-    "ازاي اقدر اتبرع بالدم",
-    "ازاي اقدر اتبرع ",
-    "عايز اسجل كمتبرع",
-    "ازاي اسجل للتبرع بالدم",
-    "ايه خطوات التبرع بالدم",
-    "اعمل اي عشان اتبرع",
-    "ازاي ابقى متبرع",
-    "ممكن اسجل كمتبرع ازاي",
-    "فين اسجل عشان اتبرع",
-    "عايز ابقى متبرع بالدم",
-    "ازاي اشارك في التبرع بالدم",
-    "هل في تسجيل للمتبرعين",
-    "ازاي انضم كمتبرع",
-    "ازاي ابدأ التبرع بالدم"
+    "ازاي بتتم عملية التبرع",
+    "خطوات التبرع بالدم",
+    "بيحصل ايه في التبرع",
+    "شرح التبرع بالدم",
+    "التبرع بالدم بيتم ازاي",
+    "مراحل التبرع",
+    "ايه اللي بيحصل وقت التبرع"
   ],
-  answer: "سجّل بياناتك من هنا 👇"
+  answer: [
+    "- بتبدأ بتسجيل بياناتك في بنك الدم.",
+    "- بعدها كشف بسيط على الضغط والهيموجلوبين.",
+    "- لو مناسب، بيتم سحب الدم في حوالي 10 دقايق.",
+    "- بعد كده بترتاح وتشرب سوائل."
+  ]
 },
 
-{
-  intent: "can_i_donate_flow",
-  questions: [
-    "ينفع اتبرع",
-    "هل اقدر اتبرع",
-    "هل انا مناسب للتبرع",
-    "هل ينفع اتبرع بالدم دلوقتي"
-  ]
-}
+  {
+    intent: "become_donor",
+    questions: [
+      "عايز اتبرع اعمل ايه",
+      "ازاي اتبرع",
+      "ازاي اتبرع بالدم",
+      "ازاي اسجل كمتبرع",
+      "عايز ابقى متبرع",
+      "التسجيل في التبرع",
+      "ازاي انضم كمتبرع",
+      "خطوات التبرع",
+      "ابدأ التبرع ازاي",
+      "فين اسجل للتبرع",
+      "ازاي اشارك في التبرع",
+      "طريقة التبرع بالدم",
+      "التسجيل كمتبرع دم",
+      "ابدأ اتبرع",
+      "عايز اتطوع للتبرع"
+    ],
+    answer: "سجّل بياناتك من هنا 👇"
+  },
+
+  {
+    intent: "can_i_donate_flow",
+    questions: [
+      "ينفع اتبرع",
+      "ينفع اتبرع دلوقتي",
+      "هل اقدر اتبرع",
+      "انا ينفع اتبرع",
+      "مناسب للتبرع",
+      "ينفع اتبرع بالدم",
+      "هل انا مناسب للتبرع",
+      "ينفع اتبرع ولا لا",
+      "اقدر اتبرع",
+      "ينفع اكون متبرع",
+      "هل ينفع اتبرع دلوقتي",
+      "ينفع اتبرع حالياً",
+      "ممكن اتبرع",
+      "ينفع اتبرع ولا لأ"
+    ]
+  }
 
 ];
-// ✅ 2. normalize (خليه كده زي ما developer قال)
+
+const allQuestions = faq.flatMap(item =>
+  item.questions.map(q => ({
+    question: q,
+    intent: item.intent,
+    answer: item.answer
+  }))
+);
+
+const fuse = new Fuse(allQuestions, {
+  keys: ["question"],
+  threshold: 0.4 // كل ما تقل = دقة أعلى
+});
+
+//  2. normalize (خليه كده زي ما developer قال)
 function normalize(text) {
-  if (!text) return ""; // 👈 أهم سطر
+  if (!text) return "";
+
   return text
     .toLowerCase()
-    .replace(/[^\u0600-\u06FFa-z0-9\s]/g, "")
-    .replace(/(انا|هل|لو|يعني|عايز|ممكن|فين|ايه)/g, "")
+    .replace(/[^\u0600-\u06FFa-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
     .replace(/(dam|blood)/g, "دم")
     .replace(/(tabaro3|donate)/g, "تبرع")
     .trim();
 }
 
-// ✅ 3. similarity
-function similarity(str1, str2) {
-  const words1 = normalize(str1).split(" ");
-  const words2 = normalize(str2).split(" ");
-
-  let match = 0;
-
-  words1.forEach(word => {
-    if (words2.includes(word)) match++;
-  });
-
-  return match / Math.max(words1.length, words2.length);
-}
 
 
-// ✅ 4. البحث الذكي
-function findBestMatch(message) {
-  let bestMatch = null;
-  let highestScore = 0;
 
-  faq.forEach(item => {
-    item.questions.forEach(q => {
-      const score = similarity(message, q);
 
-      if (score > highestScore) {
-        highestScore = score;
-        bestMatch = item;
-      }
-    });
-  });
+  //  4. البحث الذكي
+  function findBestMatch(message) {
+    const results = fuse.search(message);
 
-  return highestScore > 0.3 ? bestMatch : null;
-}
+    if (!results.length) return null;
 
-// ✅ 5. route
-router.post("/", async (req, res) => {
-const message = req.body.message || "";
-const userId = req.body.userId || "default";
+    const best = results[0].item;
 
-  // 🧠 memory flow
-// 🧠 step 1: ياخد الفصيلة
-if (userState[userId]?.step === "ask_blood_type") {
-
-  const bloodType = message.toUpperCase();
-
-  // ✅ validation هنا
-  const validBloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
-
-  if (!validBloodTypes.includes(bloodType)) {
-    return res.json({
-      reply: "قولّي فصيلة دم صحيحة 👇",
-      suggestions: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
-    });
+    return faq.find(f => f.intent === best.intent);
   }
 
-  userState[userId] = {
-    step: "ask_city",
-    bloodType
+  const formatAnswer = (answer) => {
+    if (Array.isArray(answer)) return answer.join("\n");
+    return answer;
   };
 
-  return res.json({
-    reply: "تمام 👌 قولّي محافظتك ايه؟"
-  });
-}
+  // 5. route
+  router.post("/", async (req, res) => {
+    const message = req.body.message || "";
+    const userId = req.body.userId || "default";
 
-// 🧠 step 2: ياخد المحافظة
-if (userState[userId]?.step === "ask_city") {
+    // 📍 detect location مباشرة
+    const normalizedMessage = normalize(message);
 
-  const city = message;
-  const bloodType = userState[userId].bloodType;
+    // 🧠 FLOW PRIORITY (مهم جدًا)
+    if (userState[userId]?.step === "ask_blood_type") {
+      const bloodType = message.toUpperCase();
 
-  userState[userId] = {}; // reset
 
-  // 📍 يجيب البنك
-let foundCity = null;
+      const validBloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
-for (let c in bloodBanks) {
-  const names = [c, ...(bloodBanks[c].aliases || [])];
+      if (!validBloodTypes.includes(bloodType)) {
+        return res.json({
+          reply: "قولّي فصيلة دم صحيحة 👇",
+          suggestions: validBloodTypes
+        });
+      }
 
-  for (let name of names) {
-    if (normalize(city) === normalize(name)) {
-      foundCity = c;
-      break;
-    }
-  }
-}
-
-if (foundCity) {
-  const bank = bloodBanks[foundCity];
-
-  return res.json({
-    reply: `📍 ${foundCity}
-العنوان: ${bank.address}
-📞 ${bank.phones.join(" - ")}`
-  });
-}
- const availableCities = Object.keys(bloodBanks);
-
-// لو ملقاش المدينة
-const normalizedCity = normalize(city);
-let suggestedCity = null;
-
-for (let key in nearestCityMap) {
-  if (normalize(key) === normalizedCity) {
-    suggestedCity = nearestCityMap[key];
-    break;
-  }
-}
-
-if (suggestedCity && bloodBanks[suggestedCity]) {
-  const bank = bloodBanks[suggestedCity];
-
-  return res.json({
-    reply: `المحافظة دي مفيهاش بنك دم 😅
-
-📍 أقرب مكان:
-${suggestedCity}
-العنوان: ${bank.address}
-📞 ${bank.phones.join(" - ")}`,
-    suggestions: [suggestedCity]
-  });
-}
-
-return res.json({
-  reply: `المحافظة دي مش متوفرة 😅
-
-📍 جرب واحدة من دول:
-${availableCities.join(" - ")}`,
-  suggestions: availableCities
-});
-
-}
-
-// 📍 detect location مباشرة
-const normalizedMessage = normalize(message);
-
-// 🔥 detect can donate flow (priority)
-if (
-  normalizedMessage.includes("ينفع اتبرع") ||
-  normalizedMessage.includes("اقدر اتبرع") ||
-  normalizedMessage.includes("مناسب للتبرع")
-) {
-  userState[userId] = { step: "ask_blood_type" };
-
-  return res.json({
-    reply: "تمام 👌 قولّي فصيلة دمك ايه؟",
-    suggestions: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
-  });
-}
-
-{
-  try {
-    const latest = await EmergencyAd.findOne().sort({ createdAt: -1 });
-
-    if (!latest) {
-      return res.json({ reply: "حاليًا مفيش حالات طوارئ." });
-    }
-
-    return res.json({
-      reply: `في حالة محتاجة فصيلة ${latest.bloodType} في ${latest.location}`
-    });
-
-  } catch {
-    return res.json({ reply: "حصل خطأ في جلب البيانات." });
-  }
-}
-
-for (let city in bloodBanks) {
-
-  const names = [city, ...(bloodBanks[city].aliases || [])];
-
-  for (let name of names) {
-
-    if (normalizedMessage.split(" ").includes(normalize(name))) {
-
-      const bank = bloodBanks[city];
+      userState[userId] = {
+        step: "ask_city",
+        bloodType
+      };
 
       return res.json({
-        reply: `📍 ${city}
-العنوان: ${bank.address}
-📞 ${bank.phones.join(" - ")}`
+        reply: "تمام 👌 قولّي محافظتك ايه؟"
       });
     }
-  }
-}
 
-const result = findBestMatch(message);
+    if (userState[userId]?.step === "ask_city") {
+      const city = message;
+      const bloodType = userState[userId].bloodType;
 
-  if (result) {
+      userState[userId] = {};
 
-  if (result.intent === "can_i_donate_flow") {
-    userState[userId] = { step: "ask_blood_type" };
+      let foundCity = null;
 
-    return res.json({
-      reply: "تمام 👌 قولّي فصيلة دمك ايه؟",
-      suggestions: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
-    });
-  }
+      for (let c in bloodBanks) {
+        const names = [c, ...(bloodBanks[c].aliases || [])];
 
-// 🩸 emergency
-    if (result.intent === "emergency") {
-      try {
-        const latest = await EmergencyAd.findOne().sort({ createdAt: -1 });
-
-        if (!latest) {
-          return res.json({ reply: "حاليًا مفيش حالات طوارئ." });
+        for (let name of names) {
+          if (normalize(city).includes(normalize(name))) {
+            foundCity = c;
+            break;
+          }
         }
+      }
+
+      if (foundCity) {
+        const bank = bloodBanks[foundCity];
 
         return res.json({
-          reply: `في حالة محتاجة فصيلة ${latest.bloodType} في ${latest.location}`
+          reply: `📍 ${foundCity}
+العنوان: ${bank.address}
+📞 ${bank.phones.join(" - ")}`
         });
+      }
 
-      } catch {
-        return res.json({ reply: "حصل خطأ في جلب البيانات." });
+      return res.json({
+        reply: "المحافظة دي مش متوفرة 😅 جربي واحدة تانية"
+      });
+    }
+
+
+    for (let city in bloodBanks) {
+
+      const names = [city, ...(bloodBanks[city].aliases || [])];
+
+      for (let name of names) {
+
+        if (normalizedMessage.split(" ").includes(normalize(name))) {
+
+          const bank = bloodBanks[city];
+
+          return res.json({
+            reply: `📍 ${city}
+العنوان: ${bank.address}
+📞 ${bank.phones.join(" - ")}`
+          });
+        }
+      }
+    }
+
+    const cleanedMessage = normalize(message);
+    const result = findBestMatch(cleanedMessage);
+
+    if (result) {
+
+      if (result.intent === "can_i_donate_flow") {
+        userState[userId] = { step: "ask_blood_type" };
+
+        return res.json({
+          reply: "تمام 👌 قولّي فصيلة دمك ايه؟",
+          suggestions: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
+        });
+      }
+      // 🩸 emergency
+
+      if (result.intent === "emergency") {
+
+        try {
+          const ads = await EmergencyAd.find({
+            status: "active",
+            createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } // آخر 24 ساعة
+          }).sort({ createdAt: -1 });
+
+          if (!ads.length) {
+            return res.json({
+              reply: `حاليًا مفيش حالات طوارئ 😌
+
+        لكن تقدر تسجّل كمتبرع من هنا 👇
+        http://localhost:3000/register
+
+        📌 أول ما يظهر حالة مناسبة لفصيلة دمك، هنتواصل معاك فورًا ❤️`,
+              suggestions: ["عايز أتبرع", "أماكن بنوك الدم"]
+            });
+          }
+
+          const response = ads.map(ad =>
+            `🚨 فصيلة: ${ad.bloodType}
+📍 ${ad.governorate}
+📝 ${ad.message}`
+          );
+
+          return res.json({
+            reply: response.join("\n\n")
+          });
+
+        } catch (error) {
+          console.error(error);
+          return res.json({ reply: "حصل خطأ في جلب البيانات." });
+        }
       }
     }
 
@@ -809,22 +787,13 @@ const result = findBestMatch(message);
     📌 أول ما يبقى في حالة محتاجة فصيلتك، هنتواصل معاك فورًا ❤️`
       });
     }
-return res.json({
-  reply: result.answer,
-  suggestions: ["شروط التبرع", "أماكن بنوك الدم", "فيه حالات طوارئ؟"]
-});  
-}
+    return res.json({
+      reply: formatAnswer(result.answer),
+      suggestions: ["شروط التبرع", "أماكن بنوك الدم", "فيه حالات طوارئ؟"]
+    });
 
-  res.json({
-  reply: "مش فاهم سؤالك 😅 جرب تختار من دول 👇",
-  suggestions: [
-    "مين يقدر يتبرع",
-    "أماكن بنوك الدم",
-    "فيه حالات طوارئ",
-    "فوائد التبرع"
-  ]
-});
 
-});
 
-module.exports = router;
+  });
+
+  module.exports = router;
