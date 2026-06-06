@@ -9,6 +9,7 @@ import {
   MapPin,
   CreditCard,
 } from "lucide-react"
+import { requestNotificationPermission } from "../../lib/notifications"
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -21,6 +22,7 @@ export default function RegisterPage() {
   })
 
   const [nationalIdError, setNationalIdError] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -29,6 +31,7 @@ export default function RegisterPage() {
 
     if (name === "nationalId") {
       const onlyNumbers = value.replace(/\D/g, "")
+
       setFormData({
         ...formData,
         [name]: onlyNumbers,
@@ -57,6 +60,8 @@ export default function RegisterPage() {
       return
     }
 
+    setIsSubmitting(true)
+
     try {
       const res = await fetch("http://localhost:5000/api/donors", {
         method: "POST",
@@ -74,7 +79,45 @@ export default function RegisterPage() {
         return
       }
 
-      alert("تم التسجيل بنجاح 🎉")
+      let notificationMessage = ""
+
+      try {
+        const notificationResult = await requestNotificationPermission()
+
+        if (
+          notificationResult.success &&
+          notificationResult.token &&
+          data?.donor?._id
+        ) {
+          const tokenRes = await fetch(
+            `http://localhost:5000/api/donors/${data.donor._id}/notification-token`,
+            {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                fcmToken: notificationResult.token,
+              }),
+            }
+          )
+
+          if (tokenRes.ok) {
+            notificationMessage = "\nتم تفعيل إشعارات الطوارئ بنجاح 🔔"
+          } else {
+            notificationMessage =
+              "\nتم التسجيل، لكن لم يتم حفظ كود الإشعارات"
+          }
+        } else {
+          notificationMessage = `\n${notificationResult.message}`
+        }
+      } catch (notificationError) {
+        console.error("Notification error:", notificationError)
+        notificationMessage =
+          "\nتم التسجيل، لكن حدث خطأ أثناء تفعيل الإشعارات"
+      }
+
+      alert(`تم التسجيل بنجاح 🎉${notificationMessage}`)
 
       setFormData({
         fullName: "",
@@ -89,6 +132,8 @@ export default function RegisterPage() {
     } catch (error) {
       console.error(error)
       alert("حصل خطأ ❌")
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -98,26 +143,22 @@ export default function RegisterPage() {
       dir="rtl"
     >
       <div className="mx-auto flex max-w-[1000px] flex-col items-center">
-        {/* الجزء العلوي */}
         <div className="mb-10 mt-6 max-w-[507px] text-center">
           <h1 className="mb-4 text-[20px] font-extrabold text-black">
             أنقذ حياة.. تبرع بالدم
           </h1>
 
           <p className="text-[18px] font-medium text-[#444444] md:text-[20px] text-center">
-            
             <span className="block">
-              كل قطرة دم تتبرع بها يمكن أن تنقذ حياة إنسان 
+              كل قطرة دم تتبرع بها يمكن أن تنقذ حياة إنسان
             </span>
 
             <span className="block mt-2">
               انضم إلى قاعدة المتبرعين وكن سببًا في إنقاذ الأرواح
             </span>
+          </p>
+        </div>
 
-          </p>       
-     </div>
-
-        {/* الكارد */}
         <section
           className="
           w-full rounded-[30px] border border-[#E2E2E2] bg-[#FEFEFE]
@@ -128,18 +169,20 @@ export default function RegisterPage() {
           hover:shadow-[0px_10px_40px_rgba(0,0,0,0.15)]
         "
         >
-          {/* عنوان الكارد */}
           <div className="mb-8 text-center">
             <h2 className="mb-3 text-[26px] font-medium text-[#0E0E0E] md:text-[30px]">
               تسجيل بيانات متبرع جديد
             </h2>
+
             <p className="text-[15px] text-[#818181] md:text-[16px]">
               يرجى تعبئة النموذج أدناه للمساهمة في إنقاذ حياة المرضى
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="mx-auto max-w-[945px] space-y-5">
-            {/* الاسم */}
+          <form
+            onSubmit={handleSubmit}
+            className="mx-auto max-w-[945px] space-y-5"
+          >
             <FormField
               label="الاسم الرباعي"
               placeholder="ادخل الاسم الرباعي"
@@ -150,7 +193,6 @@ export default function RegisterPage() {
               onChange={handleChange}
             />
 
-            {/* الصف الثاني */}
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
               <SelectField
                 label="فصيلة الدم"
@@ -173,7 +215,6 @@ export default function RegisterPage() {
               />
             </div>
 
-            {/* الصف الثالث */}
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
               <SelectField
                 label="المحافظة"
@@ -224,7 +265,6 @@ export default function RegisterPage() {
               />
             </div>
 
-            {/* الرقم القومي */}
             <div className="flex flex-col gap-[5px]">
               <label className="flex items-center gap-2 justify-start text-[16px] text-black">
                 <span>
@@ -257,18 +297,19 @@ export default function RegisterPage() {
               )}
             </div>
 
-            {/* زرار */}
             <div className="pt-4 text-center">
               <button
                 type="submit"
+                disabled={isSubmitting}
                 className="
                   h-[61px] w-full max-w-[260px] rounded-[10px]
                   bg-[#E02323] text-[18px] font-medium text-white
                   transition-all duration-300
                   hover:scale-[1.03] hover:shadow-lg
+                  disabled:cursor-not-allowed disabled:opacity-60
                 "
               >
-                تسجيل البيانات
+                {isSubmitting ? "جاري التسجيل..." : "تسجيل البيانات"}
               </button>
 
               <p className="mx-auto mt-4 max-w-[230px] text-[14px] text-black md:text-[16px]">
@@ -282,7 +323,6 @@ export default function RegisterPage() {
   )
 }
 
-/* ================== INPUT ================== */
 function FormField({
   label,
   placeholder,
@@ -318,7 +358,6 @@ function FormField({
   )
 }
 
-/* ================== SELECT ================== */
 function SelectField({
   label,
   icon,
