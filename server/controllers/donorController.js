@@ -57,6 +57,8 @@ const createDonor = async (req, res) => {
       lastDonationDate: lastDonationDate || null,
       notes: notes || "",
       source: source === "employee" ? "employee" : "user",
+      fcmToken: "",
+      notificationAllowed: false,
       donations: [],
       updateHistory: [],
     });
@@ -222,7 +224,9 @@ const registerDonation = async (req, res) => {
     const donor = await Donor.findById(id);
 
     if (!donor) {
-      return res.status(404).json({ message: "المتبرع غير موجود" });
+      return res.status(404).json({
+        message: "المتبرع غير موجود",
+      });
     }
 
     if (!donationDate) {
@@ -295,7 +299,9 @@ const registerDonation = async (req, res) => {
                             </p>
 
                             <p style="margin:8px 0; font-size:15px;">
-                              <strong>تاريخ التبرع:</strong> ${new Date(donationDate).toLocaleDateString("ar-EG")}
+                              <strong>تاريخ التبرع:</strong> ${new Date(
+                                donationDate
+                              ).toLocaleDateString("ar-EG")}
                             </p>
 
                             <p style="margin:8px 0; font-size:15px;">
@@ -365,14 +371,8 @@ const registerDonation = async (req, res) => {
 const updateDonor = async (req, res) => {
   try {
     const { id } = req.params;
-    const {
-      fullName,
-      email,
-      phone,
-      governorate,
-      notes,
-      employeeName,
-    } = req.body;
+    const { fullName, email, phone, governorate, notes, employeeName } =
+      req.body;
 
     const donor = await Donor.findById(id);
 
@@ -444,10 +444,50 @@ const updateDonor = async (req, res) => {
   }
 };
 
+// حفظ FCM Token لتفعيل إشعارات المتصفح
+const saveDonorNotificationToken = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { fcmToken } = req.body;
+
+    if (!fcmToken) {
+      return res.status(400).json({
+        message: "FCM Token مطلوب",
+      });
+    }
+
+    const donor = await Donor.findById(id);
+
+    if (!donor) {
+      return res.status(404).json({
+        message: "المتبرع غير موجود",
+      });
+    }
+
+    donor.fcmToken = fcmToken;
+    donor.notificationAllowed = true;
+
+    await donor.save();
+
+    return res.status(200).json({
+      message: "تم تفعيل إشعارات المتبرع بنجاح",
+      donor,
+    });
+  } catch (error) {
+    console.error("Save FCM token error:", error);
+
+    return res.status(500).json({
+      message: "حدث خطأ أثناء حفظ كود الإشعارات",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   createDonor,
   getAllDonors,
   deleteDonor,
   registerDonation,
   updateDonor,
+  saveDonorNotificationToken,
 };
