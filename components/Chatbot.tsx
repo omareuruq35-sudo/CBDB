@@ -76,20 +76,21 @@ export default function Chatbot() {
       {/* الشات */}
       {open && (
         <div style={{
-          position: "fixed",
-          bottom: "90px",
-          right: "20px",
-          width: "100%",
-          maxWidth: "400px",
-          height: "70vh",
-          background: "#f7f7f7",
-          borderRadius: "15px",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-          boxShadow: "0 5px 20px rgba(0,0,0,0.2)",
-          zIndex: 9999
-        }}>
+            position: "fixed",
+            bottom: "90px",
+            right: "20px",
+            width: "400px",
+            maxWidth: "calc(100vw - 40px)",
+            height: "70vh",
+            background: "#f7f7f7",
+            borderRadius: "15px",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            boxShadow: "0 5px 20px rgba(0,0,0,0.2)",
+            zIndex: 9999,
+            direction: "rtl",
+          }}>
 
           {/* Header */}
           <div style={{
@@ -113,14 +114,28 @@ export default function Chatbot() {
                 display: "flex",
                 justifyContent: msg.sender === "user" ? "flex-end" : "flex-start",
                 marginBottom: "8px"
-              }}>
-                <div style={{
-                  background: msg.sender === "user" ? "#dcf8c6" : "#fff",
-                  padding: "8px 12px",
-                  borderRadius: "15px",
-                  maxWidth: "70%",
-                  boxShadow: "0 1px 5px rgba(0,0,0,0.1)"
-                }}>
+              }}
+              >
+
+                <div 
+                style={{
+                    background: msg.sender === "user" ? "#dcf8c6" : "#fff",
+                    padding: "10px 14px",
+                    borderRadius:
+                      msg.sender === "user"
+                        ? "15px 15px 3px 15px"
+                        : "15px 15px 15px 3px",
+                    maxWidth: "85%",
+                    boxShadow: "0 1px 5px rgba(0,0,0,0.1)",
+                    lineHeight: "2",
+                    fontSize: "14px",
+                    textAlign: "right",
+                    direction: "rtl",
+                    whiteSpace: "pre-line",
+                    wordBreak: "break-word",
+                  }}
+                >
+
                 {Array.isArray(msg.text) ? (
                 <ul style={{ paddingRight: "15px" }}>
                     {msg.text.map((item: string, i: number) => (
