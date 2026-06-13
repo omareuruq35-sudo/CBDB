@@ -1,6 +1,6 @@
 const nodemailer = require("nodemailer");
 
-const sendEmail = async ({ to, subject, html }) => {
+const sendEmail = async ({ to, subject, html, text }) => {
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -13,6 +13,7 @@ const sendEmail = async ({ to, subject, html }) => {
     from: `"البنك المركزي المصري للتبرع بالدم" <${process.env.EMAIL_USER}>`,
     to,
     subject,
+    text: text || subject,
     html,
   };
 

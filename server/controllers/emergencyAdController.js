@@ -3,6 +3,7 @@ const Donor = require("../models/Donor");
 const sendEmail = require("../utils/sendEmail");
 const sendPushNotification = require("../utils/sendPushNotification");
 
+
 // دالة تنسيق التاريخ
 const formatArabicDate = (date) => {
   return new Date(date).toLocaleString("en-GB", {
@@ -67,7 +68,7 @@ const createEmergencyAd = async (req, res) => {
 
     const newAd = await EmergencyAd.create({
       bloodType,
-      governorate,
+      governorate: governorate.trim(),
       message,
       duration: durationNumber,
       createdAtDate,
@@ -78,9 +79,10 @@ const createEmergencyAd = async (req, res) => {
     const threeMonthsAgo = new Date();
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
+    // البحث عن المتبرعين المطابقين
     const eligibleDonors = await Donor.find({
-      bloodType,
-      governorate,
+      bloodType: bloodType,
+      governorate: governorate.trim(),
       email: { $exists: true, $ne: "" },
       $or: [
         { lastDonationDate: null },
@@ -88,101 +90,65 @@ const createEmergencyAd = async (req, res) => {
       ],
     });
 
+    console.log("========== EMERGENCY EMAIL DEBUG ==========");
+    console.log("Blood Type:", bloodType);
+    console.log("Governorate:", governorate.trim());
+    console.log("Eligible Donors Count:", eligibleDonors.length);
+    console.log(
+      "Eligible Donors:",
+      eligibleDonors.map((donor) => ({
+        name: donor.fullName,
+        email: donor.email,
+        phone: donor.phone,
+        bloodType: donor.bloodType,
+        governorate: donor.governorate,
+        lastDonationDate: donor.lastDonationDate,
+      }))
+    );
+    console.log("==========================================");
+
     const emailResults = await Promise.allSettled(
       eligibleDonors.map((donor) =>
-        sendEmail({
-          to: donor.email,
-          subject: "طلب تبرع دم عاجل",
-          html: `
-            <div style="margin:0; padding:0; background-color:#f6f6f6; direction:rtl; font-family:Arial, Helvetica, sans-serif;">
-              <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f6f6f6; padding:30px 0;">
-                <tr>
-                  <td align="center">
-                    <table width="650" cellpadding="0" cellspacing="0" style="max-width:650px; width:100%; background-color:#ffffff; border-radius:18px; overflow:hidden; box-shadow:0 8px 30px rgba(0,0,0,0.08);">
-                      
-                      <tr>
-                        <td style="background:linear-gradient(135deg, #b71c1c, #d32f2f); padding:30px 25px; text-align:center;">
-                          <h1 style="margin:0; color:#ffffff; font-size:28px; font-weight:bold;">
-                            طلب تبرع دم عاجل
-                          </h1>
-                          <p style="margin:10px 0 0; color:#ffeaea; font-size:15px;">
-                            Central Blood Donation Bank
-                          </p>
-                        </td>
-                      </tr>
+sendEmail({
+  to: donor.email,
+  subject: `تنبيه تبرع دم لفصيلة ${bloodType} في ${governorate}`,
+  text: `مرحبًا ${donor.fullName}، توجد حالة تحتاج إلى فصيلة دم ${bloodType} داخل محافظة ${governorate}. بيانات الحالة: ${message}. إذا كنت قادرًا على التبرع، يرجى التوجه إلى أقرب مركز بنك دم مناسب. شكرًا لمساهمتك في إنقاذ حياة إنسان.`,
+  html: `
+    <div style="font-family: Arial, sans-serif; direction: rtl; text-align: right; line-height: 1.8; color: #222;">
+      <h2>تنبيه تبرع دم</h2>
 
-                      <tr>
-                        <td style="padding:35px 30px 20px; text-align:right; color:#222;">
-                          <h2 style="margin:0 0 15px; color:#c62828; font-size:24px;">
-                            مرحبًا ${donor.fullName}
-                          </h2>
+      <p>مرحبًا ${donor.fullName}،</p>
 
-                          <p style="margin:0 0 14px; font-size:16px; line-height:1.9;">
-                            يوجد طلب تبرع عاجل لفصيلة دم
-                            <strong style="color:#b71c1c;">${bloodType}</strong>
-                            في محافظة
-                            <strong style="color:#b71c1c;">${governorate}</strong>.
-                          </p>
+      <p>
+        توجد حالة تحتاج إلى فصيلة دم
+        <strong>${bloodType}</strong>
+        داخل محافظة
+        <strong>${governorate}</strong>.
+      </p>
 
-                          <div style="background-color:#fff5f5; border:1px solid #f3c7c7; border-radius:14px; padding:18px 20px; margin:25px 0;">
-                            <h3 style="margin:0 0 12px; color:#b71c1c; font-size:18px;">
-                              تفاصيل الحالة
-                            </h3>
+      <p>
+        <strong>بيانات الحالة:</strong><br/>
+        ${message}
+      </p>
 
-                            <p style="margin:8px 0; font-size:15px;">
-                              <strong>فصيلة الدم المطلوبة:</strong> ${bloodType}
-                            </p>
+      <p>
+        إذا كنت قادرًا على التبرع، يرجى التوجه إلى أقرب مركز بنك دم أو مستشفى مناسبة.
+      </p>
 
-                            <p style="margin:8px 0; font-size:15px;">
-                              <strong>المحافظة:</strong> ${governorate}
-                            </p>
+      <p>
+        شكرًا لمساهمتك في إنقاذ حياة إنسان.
+      </p>
 
-                            <p style="margin:8px 0; font-size:15px;">
-                              <strong>رسالة الإعلان:</strong> ${message}
-                            </p>
+      <hr/>
 
-                            <p style="margin:8px 0; font-size:15px;">
-                              <strong>مدة الإعلان:</strong> ${durationNumber} ساعة
-                            </p>
-                          </div>
+      <p style="font-size: 13px; color: #666;">
+        هذه رسالة تلقائية من منصة التبرع بالدم بناءً على بياناتك المسجلة كمتبرع.
+      </p>
+    </div>
+  `,
+})
 
-                          <p style="margin:0 0 14px; font-size:16px; line-height:1.9;">
-                            برجاء التوجه إلى أقرب بنك دم أو مستشفى إذا كنت قادرًا على التبرع.
-                          </p>
-
-                          <p style="margin:0 0 20px; font-size:17px; line-height:1.9; color:#b71c1c; font-weight:bold;">
-                            تبرعك قد ينقذ حياة.
-                          </p>
-
-                          <div style="text-align:center; margin:30px 0 10px;">
-                            <a href="http://localhost:3000/locations"
-                               style="display:inline-block; background-color:#c62828; color:#ffffff; text-decoration:none; padding:14px 28px; border-radius:10px; font-size:15px; font-weight:bold;">
-                              عرض أماكن بنوك الدم
-                            </a>
-                          </div>
-
-                          <p style="margin:25px 0 0; font-size:14px; color:#666; line-height:1.8;">
-                            هذه رسالة تلقائية من نظام البنك المركزي المصري للتبرع بالدم.
-                          </p>
-                        </td>
-                      </tr>
-
-                      <tr>
-                        <td style="background-color:#fafafa; padding:18px 20px; text-align:center; border-top:1px solid #eeeeee;">
-                          <p style="margin:0; font-size:13px; color:#888;">
-                            © Central Blood Donation Bank - جميع الحقوق محفوظة
-                          </p>
-                        </td>
-                      </tr>
-
-                    </table>
-                  </td>
-                </tr>
-              </table>
-            </div>
-          `,
-        })
-      )
+)
     );
 
     const sentCount = emailResults.filter(
@@ -192,6 +158,15 @@ const createEmergencyAd = async (req, res) => {
     const failedCount = emailResults.filter(
       (result) => result.status === "rejected"
     ).length;
+
+    console.log("Email Sent Count:", sentCount);
+    console.log("Email Failed Count:", failedCount);
+    console.log(
+      "Email Errors:",
+      emailResults
+        .filter((result) => result.status === "rejected")
+        .map((result) => result.reason?.message || result.reason)
+    );
 
     const pushDonors = eligibleDonors.filter(
       (donor) => donor.notificationAllowed === true && donor.fcmToken
@@ -223,13 +198,12 @@ const createEmergencyAd = async (req, res) => {
     ).length;
 
     return res.status(201).json({
-      message:
-        "تم نشر الإعلان وإرسال الإيميل وإشعارات الويب للمتبرعين المناسبين",
+      message: "تم نشر الإعلان وإرسال الإيميل للمتبرعين المناسبين",
 
       matchedDonors: eligibleDonors.length,
 
-      notifiedDonors: sentCount,
-      failedNotifications: failedCount,
+      emailNotifiedDonors: sentCount,
+      failedEmailNotifications: failedCount,
 
       pushMatchedDonors: pushDonors.length,
       pushNotifiedDonors: pushSentCount,
