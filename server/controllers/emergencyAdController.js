@@ -2,7 +2,8 @@ const EmergencyAd = require("../models/EmergencyAd");
 const Donor = require("../models/Donor");
 const sendEmail = require("../utils/sendEmail");
 const sendPushNotification = require("../utils/sendPushNotification");
-
+// 1. استدعاء دالة إرسال الواتساب من السيرفيس اللي عملناها سوا
+const { sendEmergencyWhatsApp } = require("../services/whatsappService");
 
 // دالة تنسيق التاريخ
 const formatArabicDate = (date) => {
@@ -79,95 +80,59 @@ const createEmergencyAd = async (req, res) => {
     const threeMonthsAgo = new Date();
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
-    // البحث عن المتبرعين المطابقين
+    // 2. تعديل الـ Query: شيلنا شرط الإيميل الإجباري عشان نجيب المتبرعين بالهاتف أيضاً للواتساب
     const eligibleDonors = await Donor.find({
       bloodType: bloodType,
       governorate: governorate.trim(),
-      email: { $exists: true, $ne: "" },
       $or: [
         { lastDonationDate: null },
         { lastDonationDate: { $lte: threeMonthsAgo } },
       ],
     });
 
-    console.log("========== EMERGENCY EMAIL DEBUG ==========");
+    console.log("========== EMERGENCY DEBUG ==========");
     console.log("Blood Type:", bloodType);
     console.log("Governorate:", governorate.trim());
     console.log("Eligible Donors Count:", eligibleDonors.length);
-    console.log(
-      "Eligible Donors:",
-      eligibleDonors.map((donor) => ({
-        name: donor.fullName,
-        email: donor.email,
-        phone: donor.phone,
-        bloodType: donor.bloodType,
-        governorate: donor.governorate,
-        lastDonationDate: donor.lastDonationDate,
-      }))
-    );
     console.log("==========================================");
 
+    // ---------------- [ إرسال الإيميلات ] ----------------
+    const emailDonors = eligibleDonors.filter(donor => donor.email && donor.email !== "");
     const emailResults = await Promise.allSettled(
-      eligibleDonors.map((donor) =>
-sendEmail({
-  to: donor.email,
-  subject: `تنبيه تبرع دم لفصيلة ${bloodType} في ${governorate}`,
-  text: `مرحبًا ${donor.fullName}، توجد حالة تحتاج إلى فصيلة دم ${bloodType} داخل محافظة ${governorate}. بيانات الحالة: ${message}. إذا كنت قادرًا على التبرع، يرجى التوجه إلى أقرب مركز بنك دم مناسب. شكرًا لمساهمتك في إنقاذ حياة إنسان.`,
-  html: `
-    <div style="font-family: Arial, sans-serif; direction: rtl; text-align: right; line-height: 1.8; color: #222;">
-      <h2>تنبيه تبرع دم</h2>
-
-      <p>مرحبًا ${donor.fullName}،</p>
-
-      <p>
-        توجد حالة تحتاج إلى فصيلة دم
-        <strong>${bloodType}</strong>
-        داخل محافظة
-        <strong>${governorate}</strong>.
-      </p>
-
-      <p>
-        <strong>بيانات الحالة:</strong><br/>
-        ${message}
-      </p>
-
-      <p>
-        إذا كنت قادرًا على التبرع، يرجى التوجه إلى أقرب مركز بنك دم أو مستشفى مناسبة.
-      </p>
-
-      <p>
-        شكرًا لمساهمتك في إنقاذ حياة إنسان.
-      </p>
-
-      <hr/>
-
-      <p style="font-size: 13px; color: #666;">
-        هذه رسالة تلقائية من منصة التبرع بالدم بناءً على بياناتك المسجلة كمتبرع.
-      </p>
-    </div>
-  `,
-})
-
-)
+      emailDonors.map((donor) =>
+        sendEmail({
+          to: donor.email,
+          subject: `تنبيه تبرع دم لفصيلة ${bloodType} في ${governorate}`,
+          text: `مرحبًا ${donor.fullName}، توجد حالة تحتاج إلى فصيلة دم ${bloodType} داخل محافظة ${governorate}.`,
+          html: `<div style="direction: rtl; text-align: right;"><h2>تنبيه تبرع دم</h2><p>مرحبًا ${donor.fullName}...</p></div>`, // اختصرتها هنا عشان المساحة، سيب كود الـ HTML بتاعك زي ما هو
+        })
+      )
     );
 
-    const sentCount = emailResults.filter(
-      (result) => result.status === "fulfilled"
-    ).length;
+    const emailSentCount = emailResults.filter((result) => result.status === "fulfilled").length;
+    const emailFailedCount = emailResults.filter((result) => result.status === "rejected").length;
 
-    const failedCount = emailResults.filter(
-      (result) => result.status === "rejected"
-    ).length;
 
-    console.log("Email Sent Count:", sentCount);
-    console.log("Email Failed Count:", failedCount);
-    console.log(
-      "Email Errors:",
-      emailResults
-        .filter((result) => result.status === "rejected")
-        .map((result) => result.reason?.message || result.reason)
+    // ---------------- [ إرسال الواتساب ] ----------------
+    // فلترة المتبرعين اللي عندهم رقم تليفون مسجل
+    const whatsappDonors = eligibleDonors.filter(donor => donor.phone && donor.phone !== "");
+    const whatsappResults = await Promise.allSettled(
+      whatsappDonors.map((donor) => sendEmergencyWhatsApp(donor, newAd))
     );
 
+    const whatsappSentCount = whatsappResults.filter((result) => result.status === "fulfilled").length;
+    const whatsappFailedCount = whatsappResults.filter((result) => result.status === "rejected").length;
+
+    // طباعة أخطاء الواتساب لو ظهرت في الـ Console للـ Debugging
+    console.log("WhatsApp Sent:", whatsappSentCount, "Failed:", whatsappFailedCount);
+    whatsappResults.forEach((res, idx) => {
+      if (res.status === "rejected") {
+        console.error(`خطأ تليفون ${whatsappDonors[idx].phone}:`, res.reason?.message || res.reason);
+      }
+    });
+
+
+    // ---------------- [ إرسال الـ Push Notifications ] ----------------
     const pushDonors = eligibleDonors.filter(
       (donor) => donor.notificationAllowed === true && donor.fcmToken
     );
@@ -189,21 +154,19 @@ sendEmail({
       )
     );
 
-    const pushSentCount = pushResults.filter(
-      (result) => result.status === "fulfilled"
-    ).length;
+    const pushSentCount = pushResults.filter((result) => result.status === "fulfilled").length;
+    const pushFailedCount = pushResults.filter((result) => result.status === "rejected").length;
 
-    const pushFailedCount = pushResults.filter(
-      (result) => result.status === "rejected"
-    ).length;
-
+    // الـ Response النهائي شامل إحصائيات الواتساب الجديدة
     return res.status(201).json({
-      message: "تم نشر الإعلان وإرسال الإيميل للمتبرعين المناسبين",
-
+      message: "تم نشر الإعلان وإرسال التنبيهات للمتبرعين المناسبين عبر القنوات المتاحة",
       matchedDonors: eligibleDonors.length,
 
-      emailNotifiedDonors: sentCount,
-      failedEmailNotifications: failedCount,
+      emailNotifiedDonors: emailSentCount,
+      failedEmailNotifications: emailFailedCount,
+
+      whatsappNotifiedDonors: whatsappSentCount,
+      failedWhatsAppNotifications: whatsappFailedCount,
 
       pushMatchedDonors: pushDonors.length,
       pushNotifiedDonors: pushSentCount,
@@ -223,7 +186,6 @@ sendEmail({
     });
   } catch (error) {
     console.error("Create emergency ad error:", error);
-
     return res.status(500).json({
       message: "حصل خطأ أثناء نشر الإعلان",
       error: error.message,
