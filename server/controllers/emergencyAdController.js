@@ -1,8 +1,9 @@
 const EmergencyAd = require("../models/EmergencyAd");
 const Donor = require("../models/Donor");
-const sendEmail = require("../utils/sendEmail");
 const sendPushNotification = require("../utils/sendPushNotification");
-// 1. استدعاء دالة إرسال الواتساب من السيرفيس اللي عملناها سوا
+
+// ربط الخدمات الاحترافية للإيميل والواتساب
+const { sendEmergencyEmail } = require("../services/emailService");
 const { sendEmergencyWhatsApp } = require("../services/whatsappService");
 
 // دالة تنسيق التاريخ
@@ -80,7 +81,7 @@ const createEmergencyAd = async (req, res) => {
     const threeMonthsAgo = new Date();
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
-    // 2. تعديل الـ Query: شيلنا شرط الإيميل الإجباري عشان نجيب المتبرعين بالهاتف أيضاً للواتساب
+    // جلب المتبرعين المتوافقين مع الفصيلة والمحافظة والشرط الزمني للآخر تبرع
     const eligibleDonors = await Donor.find({
       bloodType: bloodType,
       governorate: governorate.trim(),
@@ -99,14 +100,7 @@ const createEmergencyAd = async (req, res) => {
     // ---------------- [ إرسال الإيميلات ] ----------------
     const emailDonors = eligibleDonors.filter(donor => donor.email && donor.email !== "");
     const emailResults = await Promise.allSettled(
-      emailDonors.map((donor) =>
-        sendEmail({
-          to: donor.email,
-          subject: `تنبيه تبرع دم لفصيلة ${bloodType} في ${governorate}`,
-          text: `مرحبًا ${donor.fullName}، توجد حالة تحتاج إلى فصيلة دم ${bloodType} داخل محافظة ${governorate}.`,
-          html: `<div style="direction: rtl; text-align: right;"><h2>تنبيه تبرع دم</h2><p>مرحبًا ${donor.fullName}...</p></div>`, // اختصرتها هنا عشان المساحة، سيب كود الـ HTML بتاعك زي ما هو
-        })
-      )
+      emailDonors.map((donor) => sendEmergencyEmail(donor, newAd))
     );
 
     const emailSentCount = emailResults.filter((result) => result.status === "fulfilled").length;
@@ -114,7 +108,6 @@ const createEmergencyAd = async (req, res) => {
 
 
     // ---------------- [ إرسال الواتساب ] ----------------
-    // فلترة المتبرعين اللي عندهم رقم تليفون مسجل
     const whatsappDonors = eligibleDonors.filter(donor => donor.phone && donor.phone !== "");
     const whatsappResults = await Promise.allSettled(
       whatsappDonors.map((donor) => sendEmergencyWhatsApp(donor, newAd))
@@ -123,7 +116,7 @@ const createEmergencyAd = async (req, res) => {
     const whatsappSentCount = whatsappResults.filter((result) => result.status === "fulfilled").length;
     const whatsappFailedCount = whatsappResults.filter((result) => result.status === "rejected").length;
 
-    // طباعة أخطاء الواتساب لو ظهرت في الـ Console للـ Debugging
+    // طباعة أخطاء الواتساب في الـ Console للـ Debugging
     console.log("WhatsApp Sent:", whatsappSentCount, "Failed:", whatsappFailedCount);
     whatsappResults.forEach((res, idx) => {
       if (res.status === "rejected") {
@@ -157,7 +150,7 @@ const createEmergencyAd = async (req, res) => {
     const pushSentCount = pushResults.filter((result) => result.status === "fulfilled").length;
     const pushFailedCount = pushResults.filter((result) => result.status === "rejected").length;
 
-    // الـ Response النهائي شامل إحصائيات الواتساب الجديدة
+    // الـ Response النهائي شامل جميع الإحصائيات بدقة للقنوات الثلاثة
     return res.status(201).json({
       message: "تم نشر الإعلان وإرسال التنبيهات للمتبرعين المناسبين عبر القنوات المتاحة",
       matchedDonors: eligibleDonors.length,

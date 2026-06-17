@@ -13,34 +13,37 @@ async function notifyMatchedDonors(emergencyAd) {
   let whatsappSent = 0;
   let whatsappFailed = 0;
 
-  for (const donor of matchedDonors) {
-    // إرسال Email
+  // 1. هنعمل الخريطة (Map) لتجهيز كل الوعود (Promises) بدون انتظارها فوراً
+  const notificationPromises = matchedDonors.map(async (donor) => {
+    
+    // معالجة الإيميل لكل متبرع بشكل مستقل
     if (donor.email) {
       try {
         await sendEmergencyEmail(donor, emergencyAd);
         emailSent++;
       } catch (error) {
         emailFailed++;
-        console.log("Email failed:", donor.email, error.message);
+        console.log(`Email failed for ${donor.email}:`, error.message);
       }
     }
 
-    // إرسال WhatsApp
+    // معالجة الواتساب لكل متبرع بشكل مستقل
     if (donor.phone) {
       try {
+        // نصيحة: هنا بنبعت الـ emergencyAd والخدمة جواها تصيغ النص جوه الـ Variable {{1}}
         await sendEmergencyWhatsApp(donor, emergencyAd);
         whatsappSent++;
       } catch (error) {
         whatsappFailed++;
-        console.log(
-          "WhatsApp failed:",
-          donor.phone,
-          error.response?.data || error.message
-        );
+        console.log(`WhatsApp failed for ${donor.phone}:`, error.response?.data || error.message);
       }
     }
-  }
+  });
 
+  // 2. تشغيل كل الإرساليات "في نفس الوقت" دفعة واحدة وانتظار انتهاء الجميع
+  await Promise.all(notificationPromises);
+
+  // 3. رجوع التقرير النهائي فوراً
   return {
     matchedDonors: matchedDonors.length,
     emailSent,
